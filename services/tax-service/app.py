@@ -1,32 +1,53 @@
-import os
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
 
-department = os.getenv("DEPARTMENT_NAME", "tax")
-app = FastAPI(title="GovMesh Tax Service Simulator")
+app = FastAPI(title="Tax Service (Simulated)")
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+class TaxData(BaseModel):
+    taxpayerName: str
+    taxId: str
+    taxStatus: str
+    outstandingAmount: float
+
+MOCK_DB = {
+    "CIT-1001": TaxData(
+        taxpayerName="Rajesh Kumar",
+        taxId="PAN-AXXXX1234Z",
+        taxStatus="CLEARED",
+        outstandingAmount=0.0
+    ),
+    "CIT-1002": TaxData(
+        taxpayerName="Priya Sharma",
+        taxId="PAN-BXXXX5678Y",
+        taxStatus="DUE",
+        outstandingAmount=14500.50
+    )
+}
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "service": "tax-service", "department": department}
+    return {"status": "ok", "service": "tax"}
 
-@app.get("/records/{citizen_id}")
-def get_record(citizen_id: str):
-    return {
-        "department": department,
-        "service": "tax-service",
-        "citizen_id": citizen_id,
-        "verified": True,
-        "tax_data": {
-            "pan_number": f"ABCDE{citizen_id[:4]}F",
-            "tax_dues_pending": False,
-            "financial_year": "2025-2026"
-        }
-    }
+@app.get("/api/tax/{citizen_id}")
+def get_tax(citizen_id: str):
+    if citizen_id not in MOCK_DB:
+        raise HTTPException(status_code=404, detail="Taxpayer not found")
+        
+    return MOCK_DB[citizen_id]
+
+
+# A deliberately small legacy/asynchronous-style facade: the consumer submits a
+# lookup and then reads the completed job. Jobs are deterministic for the demo.
+@app.post("/api/tax/requests/{citizen_id}")
+def submit_tax_lookup(citizen_id: str):
+    if citizen_id not in MOCK_DB:
+        raise HTTPException(status_code=404, detail="Taxpayer not found")
+    return {"job_id": f"TAX-JOB-{citizen_id}", "status": "completed"}
+
+
+@app.get("/api/tax/requests/{job_id}")
+def get_tax_lookup(job_id: str):
+    citizen_id = job_id.removeprefix("TAX-JOB-")
+    if citizen_id not in MOCK_DB:
+        raise HTTPException(status_code=404, detail="Tax lookup not found")
+    return {"job_id": job_id, "status": "completed", "result": MOCK_DB[citizen_id]}

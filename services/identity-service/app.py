@@ -1,32 +1,39 @@
-import os
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI, Header, HTTPException
+from pydantic import BaseModel
 
-department = os.getenv("DEPARTMENT_NAME", "identity")
-app = FastAPI(title="GovMesh Identity Service Simulator")
+app = FastAPI(title="Identity Service (Simulated)")
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+class IdentityData(BaseModel):
+    citizen_id: str
+    full_name: str
+    date_of_birth: str
+    address: str
+
+MOCK_DB = {
+    "CIT-1001": IdentityData(
+        citizen_id="CIT-1001",
+        full_name="Rajesh Kumar",
+        date_of_birth="1985-06-15",
+        address="123 MG Road, Bangalore, Karnataka"
+    ),
+    "CIT-1002": IdentityData(
+        citizen_id="CIT-1002",
+        full_name="Priya Sharma",
+        date_of_birth="1990-11-20",
+        address="456 Park Street, Kolkata, West Bengal"
+    )
+}
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "service": "identity-service", "department": department}
+    return {"status": "ok", "service": "identity"}
 
-@app.get("/records/{citizen_id}")
-def get_record(citizen_id: str):
-    return {
-        "department": department,
-        "service": "identity-service",
-        "citizen_id": citizen_id,
-        "verified": True,
-        "identity_data": {
-            "name": f"Citizen {citizen_id}",
-            "status": "Active",
-            "national_id": f"ID-{citizen_id}"
-        }
-    }
+@app.get("/api/identity/{citizen_id}")
+def get_identity(citizen_id: str, authorization: str = Header(None)):
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    
+    if citizen_id not in MOCK_DB:
+        raise HTTPException(status_code=404, detail="Citizen not found")
+        
+    return MOCK_DB[citizen_id]

@@ -10,6 +10,13 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from app.core.config import settings
 from app.db.session import Base
+from app.models.service_request import ServiceRequest
+from app.models.consent import CitizenConsent
+from app.models.policy_decision import PolicyDecision
+from app.models.user import User
+from app.models.system import System
+from app.models.data_request import DataRequest
+from app.models.audit_log import AuditLog
 
 config = context.config
 config.set_main_option("sqlalchemy.url", settings.database_url)

@@ -1,0 +1,16 @@
+
+
+Traceback (most recent call last):
+  File "/Users/luckysinghpanwar/Desktop/govmesh/backend/venv/lib/python3.12/site-packages/alembic/util/pyfiles.py", line 32, in template_to_file
+    output = template.render_unicode(**kw).encode(output_encoding)
+  File "/Users/luckysinghpanwar/Desktop/govmesh/backend/venv/lib/python3.12/site-packages/mako/template.py", line 448, in render_unicode
+    return runtime._render(
+  File "/Users/luckysinghpanwar/Desktop/govmesh/backend/venv/lib/python3.12/site-packages/mako/runtime.py", line 867, in _render
+    _render_context(
+  File "/Users/luckysinghpanwar/Desktop/govmesh/backend/venv/lib/python3.12/site-packages/mako/runtime.py", line 909, in _render_context
+    _exec_template(inherit, lclcontext, args=args, kwargs=kwargs)
+  File "/Users/luckysinghpanwar/Desktop/govmesh/backend/venv/lib/python3.12/site-packages/mako/runtime.py", line 936, in _exec_template
+    callable_(context, *args, **kwargs)
+  File "alembic/script.py.mako", line 4, in render_body
+    Revises: ${down_revision | repr, empty}
+TypeError: 'Undefined' object is not callable
