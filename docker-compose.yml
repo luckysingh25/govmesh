@@ -1,0 +1,67 @@
+services:
+  backend:
+    build: ./backend
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-govmesh}:${POSTGRES_PASSWORD:-govmesh}@postgres:5432/${POSTGRES_DB:-govmesh}
+      REDIS_URL: redis://redis:6379/0
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/app:/app/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-govmesh}
+      POSTGRES_USER: ${POSTGRES_USER:-govmesh}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-govmesh}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  identity-service:
+    build: ./services/identity-service
+    environment: { DEPARTMENT_NAME: identity }
+    ports: ["8101:8100"]
+
+  municipality-service:
+    build: ./services/municipality-service
+    environment: { DEPARTMENT_NAME: municipality }
+    ports: ["8102:8100"]
+
+  property-service:
+    build: ./services/property-service
+    environment: { DEPARTMENT_NAME: property }
+    ports: ["8103:8100"]
+
+  tax-service:
+    build: ./services/tax-service
+    environment: { DEPARTMENT_NAME: tax }
+    ports: ["8104:8100"]
+
+volumes:
+  postgres_data:
