@@ -28,9 +28,34 @@ def override_db():
 
 async def successful_departments(_self, db, citizen_id, request_id):
     return [
-        ConnectorResult("identity", "success", {"full_name": "Rajesh Kumar", "address": "123 MG Road"}),
-        ConnectorResult("property", "success", {"property_id": "PROP-1"}),
-        ConnectorResult("municipality", "success", {"resident_name": "Rajesh Kumar", "address": "123 MG Road"}),
+        ConnectorResult(
+            "identity",
+            "success",
+            {
+                "full_name": "Rajesh Kumar",
+                "date_of_birth": "1985-06-15",
+                "address": "123 MG Road",
+            },
+        ),
+        ConnectorResult(
+            "property",
+            "success",
+            {
+                "property_id": "PROP-1",
+                "owner_name": "Rajesh Kumar",
+                "address": "123 MG Road",
+                "property_type": "Commercial",
+            },
+        ),
+        ConnectorResult(
+            "municipality",
+            "success",
+            {
+                "municipal_id": "MUN-1",
+                "resident_name": "Rajesh Kumar",
+                "address": "123 MG Road",
+            },
+        ),
         ConnectorResult("tax", "success", {"tax_status": "CLEARED"}),
     ]
 
@@ -61,6 +86,36 @@ def test_create_request_returns_unified_response_and_correlation_id(monkeypatch)
     assert body["identity"]["status"] == "success"
     assert body["overall_status"] == "completed"
     assert body["consent_id"] is not None
+    assert body["insights"] == []
+    app.dependency_overrides.clear()
+
+
+def test_create_request_includes_post_aggregation_insights(monkeypatch):
+    async def departments_with_tax_due(_self, db, citizen_id, request_id):
+        results = await successful_departments(_self, db, citizen_id, request_id)
+        results[-1].data["tax_status"] = "DUE"
+        return results
+
+    app.dependency_overrides[get_db] = override_db
+    monkeypatch.setattr(
+        ServiceRequestService, "fetch_department_results", departments_with_tax_due
+    )
+    client = TestClient(app)
+    client.post("/api/v1/consent", json={
+        "citizen_id": "CIT-INTELLIGENCE",
+        "service_type": "business_registration",
+        "departments": ["identity", "property", "municipality", "tax"],
+    })
+
+    response = client.post("/api/v1/service-requests", json={
+        "citizen_id": "CIT-INTELLIGENCE",
+        "service_type": "business_registration",
+    })
+
+    assert response.status_code == 200
+    assert [item["rule_id"] for item in response.json()["insights"]] == [
+        "TAX_CLEARANCE_NOT_CONFIRMED"
+    ]
     app.dependency_overrides.clear()
 
 

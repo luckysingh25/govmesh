@@ -1,5 +1,5 @@
 from pydantic import BaseModel, ConfigDict, Field
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Literal
 from datetime import datetime
 
 class ServiceRequestCreate(BaseModel):
@@ -16,6 +16,11 @@ class CitizenInfo(BaseModel):
     name: Optional[str] = None
     address: Optional[str] = None
 
+class IntelligenceInsight(BaseModel):
+    rule_id: str
+    severity: Literal["info", "warning"]
+    message: str
+
 class ServiceRequestResponse(BaseModel):
     request_id: str
     correlation_id: str
@@ -27,6 +32,7 @@ class ServiceRequestResponse(BaseModel):
     overall_status: str
     consent_id: Optional[int] = None
     policy_decision: Optional[str] = None
+    insights: list[IntelligenceInsight] = Field(default_factory=list)
 
     model_config = ConfigDict(from_attributes=True)
 

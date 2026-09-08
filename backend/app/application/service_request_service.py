@@ -11,6 +11,7 @@ from app.connectors.identity import IdentityConnector
 from app.connectors.municipality import MunicipalityConnector
 from app.connectors.property import PropertyConnector
 from app.connectors.tax import TaxConnector
+from app.intelligence import generate_insights
 from app.models.service_request import ServiceRequest
 from app.schemas.service_request import CitizenInfo, DepartmentResponse, ServiceRequestResponse
 
@@ -116,6 +117,7 @@ class ServiceRequestService:
         # --- Consent OK — fetch department data ---
         results = await self.fetch_department_results(db, citizen_id, request_id)
         by_department = {result.department: result for result in results}
+        insights = generate_insights(results)
         identity = by_department["identity"]
         municipality = by_department["municipality"]
 
@@ -142,5 +144,6 @@ class ServiceRequestService:
             overall_status=record.status,
             consent_id=policy.consent_id,
             policy_decision="Consent verified — access allowed",
+            insights=insights,
         )
 
