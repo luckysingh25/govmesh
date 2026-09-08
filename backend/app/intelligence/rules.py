@@ -82,6 +82,7 @@ def tax_clearance_not_confirmed(
 def department_results_unavailable(
     results: Mapping[str, ConnectorResult],
 ) -> IntelligenceInsight | None:
+    missing = [department for department in DEPARTMENTS if department not in results]
     unavailable = [
         department
         for department in DEPARTMENTS
@@ -95,7 +96,7 @@ def department_results_unavailable(
         for department in unavailable
         if department in results
     }
-    severity = "info" if statuses and statuses <= {"pending"} else "warning"
+    severity = "info" if not missing and statuses == {"pending"} else "warning"
     return IntelligenceInsight(
         rule_id="DEPARTMENT_RESULTS_UNAVAILABLE",
         severity=severity,

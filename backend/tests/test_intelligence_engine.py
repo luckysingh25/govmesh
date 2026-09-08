@@ -72,6 +72,23 @@ def test_department_rule_detects_pending_or_unavailable_results():
     assert "property, tax" in insight.message
 
 
+def test_department_rule_uses_info_when_all_unavailable_results_are_pending():
+    results = healthy_results()
+    results[1] = ConnectorResult("property", "pending", {})
+
+    insight = next(item for item in generate_insights(results) if item.rule_id == "DEPARTMENT_RESULTS_UNAVAILABLE")
+    assert insight.severity == "info"
+
+
+def test_department_rule_uses_warning_when_a_result_is_missing_and_another_is_pending():
+    results = healthy_results()[:-1]
+    results[1] = ConnectorResult("property", "pending", {})
+
+    insight = next(item for item in generate_insights(results) if item.rule_id == "DEPARTMENT_RESULTS_UNAVAILABLE")
+    assert insight.severity == "warning"
+    assert "property, tax" in insight.message
+
+
 def test_multiple_findings_are_returned_in_stable_rule_order():
     results = healthy_results()
     results[0].data = {"full_name": "Rajesh Kumar"}
