@@ -67,25 +67,62 @@ async def global_exception_handler(request: Request, exc: Exception):
         content={"detail": "Internal server error", "correlation_id": correlation_id}
     )
 
-from app.api.endpoints import service_requests, consent, auth, systems
+from app.api.endpoints import service_requests, consent, auth, systems, workflows, audit, lineage, timeline, intelligence
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["auth"])
 app.include_router(systems.router, prefix="/api/v1/systems", tags=["systems"])
 app.include_router(service_requests.router, prefix="/api/v1/service-requests", tags=["service-requests"])
 app.include_router(consent.router, prefix="/api/v1/consent", tags=["consent"])
+app.include_router(workflows.router, prefix="/api/v1/workflows", tags=["workflows"])
+app.include_router(audit.router, prefix="/api/v1/audit", tags=["audit"])
+app.include_router(lineage.router, prefix="/api/v1/lineage", tags=["lineage"])
+app.include_router(timeline.router, prefix="/api/v1/timeline", tags=["timeline"])
+app.include_router(intelligence.router, prefix="/api/v1/intelligence", tags=["intelligence"])
+
+
+@app.on_event("startup")
+def startup_seed():
+    """Seed workflow definitions on application startup."""
+    from app.db.session import SessionLocal
+    from app.db.seed_workflows import seed_workflow_definitions
+    try:
+        db = SessionLocal()
+        seed_workflow_definitions(db)
+    except Exception as exc:
+        logger.warning("workflow_seed_failed error=%s", exc)
+    finally:
+        db.close()
 
 @app.get("/health")
 def health():
+    import time
+    
     # Check Database connection
-    db_status = "disconnected"
+    db_status = {"status": "disconnected", "response_time_ms": 0}
+    t0 = time.perf_counter()
     try:
         with engine.connect() as conn:
             conn.execute(text("SELECT 1"))
-            db_status = "connected"
+            db_status = {
+                "status": "connected", 
+                "response_time_ms": int((time.perf_counter() - t0) * 1000)
+            }
     except Exception:
-        db_status = "unavailable"
+        db_status = {"status": "unavailable", "response_time_ms": 0}
 
     # Check Redis connection
-    redis_status = "connected" if check_redis_connection() else "unavailable"
+    redis_status = {"status": "disconnected", "response_time_ms": 0}
+    t0 = time.perf_counter()
+    try:
+        from app.core.redis import check_redis_connection
+        if check_redis_connection():
+            redis_status = {
+                "status": "connected", 
+                "response_time_ms": int((time.perf_counter() - t0) * 1000)
+            }
+        else:
+            redis_status = {"status": "unavailable", "response_time_ms": 0}
+    except Exception:
+        redis_status = {"status": "unavailable", "response_time_ms": 0}
 
     return {
         "status": "ok",

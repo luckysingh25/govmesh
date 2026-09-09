@@ -1,21 +1,180 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card } from '../components/ui/Card';
-import { BrainCircuit } from 'lucide-react';
+import { StatusBadge } from '../components/ui/StatusBadge';
+import {
+  fetchSchemas, fetchSuggestions, approveSuggestion,
+  rejectSuggestion, fetchImpactAnalysis, triggerDemoScenario
+} from '../services/api';
+import { BrainCircuit, Play, Check, X, AlertTriangle, Layers, GitMerge } from 'lucide-react';
 
 export const Intelligence = () => {
+  const [schemas, setSchemas] = useState([]);
+  const [suggestions, setSuggestions] = useState([]);
+  const [impacts, setImpacts] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [demoLoading, setDemoLoading] = useState(false);
+
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const [sData, sugData, iData] = await Promise.all([
+        fetchSchemas(),
+        fetchSuggestions(),
+        fetchImpactAnalysis()
+      ]);
+      setSchemas(sData);
+      setSuggestions(sugData);
+      setImpacts(iData);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+    const interval = setInterval(loadData, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleTriggerDemo = async () => {
+    setDemoLoading(true);
+    try {
+      await triggerDemoScenario();
+      await loadData();
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setDemoLoading(false);
+    }
+  };
+
+  const handleApprove = async (id) => {
+    await approveSuggestion(id);
+    loadData();
+  };
+
+  const handleReject = async (id) => {
+    await rejectSuggestion(id);
+    loadData();
+  };
+
   return (
-    <div className="flex-col gap-6 flex fade-in h-full">
-      <Card className="flex flex-col items-center justify-center py-20 h-full text-center border-dashed">
-        <div className="p-6 bg-accent/10 rounded-full text-accent mb-6">
-          <BrainCircuit size={48} />
+    <div className="flex-col gap-6 flex fade-in">
+      <div className="flex justify-between items-center mb-2">
+        <div>
+          <h1 className="text-2xl font-bold flex items-center gap-2 mb-2">
+            <BrainCircuit className="text-accent" /> Interoperability Intelligence
+          </h1>
+          <p className="text-muted">AI-driven schema versioning, field mapping, and impact analysis.</p>
         </div>
-        <h2 className="text-2xl font-bold mb-4">Interoperability Intelligence</h2>
-        <p className="text-muted max-w-lg mb-8 text-lg">
-          This module is reserved for Phase 2 of GovMesh. It will use Agentic AI to automatically map and translate schemas between unknown legacy database formats and the GovMesh universal schema.
-        </p>
-        <div className="inline-flex items-center gap-2 px-4 py-2 bg-slate-800 rounded-lg text-sm text-slate-300 font-mono">
-          <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
-          Under Construction for SIH 2026 Final Prototype
+        <button
+          className="btn btn-primary"
+          onClick={handleTriggerDemo}
+          disabled={demoLoading}
+        >
+          {demoLoading ? <span className="spin">↻</span> : <Play size={16} />}
+          Trigger Upgrade Demo
+        </button>
+      </div>
+
+      <div className="dept-grid">
+        <Card title="Mapping Approvals" className="flex-1">
+          <div className="flex flex-col gap-4 mt-2">
+            {suggestions.length === 0 ? (
+              <p className="text-muted text-sm text-center py-4">No pending suggestions.</p>
+            ) : (
+              suggestions.map(sug => (
+                <div key={sug.id} style={{ padding: '1rem', background: 'rgba(15,23,42,0.4)', borderRadius: 8, border: '1px solid var(--border)' }}>
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <div className="text-xs text-muted mb-1 font-mono">ID: {sug.source_field_id}</div>
+                      <div className="font-medium flex items-center gap-2">
+                        {/* {sug.source_field?.field_name} */} Source Field
+                        <GitMerge size={14} className="text-muted" />
+                        <span className="text-accent">{sug.target_field}</span>
+                      </div>
+                    </div>
+                    <StatusBadge status={sug.mapping_type} />
+                  </div>
+                  
+                  <div className="flex items-center justify-between mt-4">
+                    <div className="text-xs">
+                      Confidence: <strong className={sug.confidence_score > 0.8 ? 'text-success' : 'text-warning'}>
+                        {(sug.confidence_score * 100).toFixed(0)}%
+                      </strong>
+                    </div>
+                    <div className="flex gap-2">
+                      <button className="btn btn-secondary text-error" style={{ padding: '0.25rem 0.5rem' }} onClick={() => handleReject(sug.id)}>
+                        <X size={14} /> Reject
+                      </button>
+                      <button className="btn btn-primary" style={{ padding: '0.25rem 0.5rem' }} onClick={() => handleApprove(sug.id)}>
+                        <Check size={14} /> Approve
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </Card>
+
+        <Card title="Impact Analysis" className="flex-1">
+          <div className="flex flex-col gap-4 mt-2">
+            {impacts.length === 0 ? (
+              <p className="text-muted text-sm text-center py-4">No breaking changes detected.</p>
+            ) : (
+              impacts.map(imp => (
+                <div key={imp.id} style={{ padding: '1rem', background: 'rgba(239, 68, 68, 0.05)', borderRadius: 8, border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+                  <div className="flex justify-between items-center mb-3">
+                    <h4 className="font-medium text-error flex items-center gap-2">
+                      <AlertTriangle size={16} /> Schema Version {imp.new_version}
+                    </h4>
+                    <span className="text-xs font-mono">{imp.system_name}</span>
+                  </div>
+                  <p className="text-sm mb-3">{imp.analysis_result?.impact_summary}</p>
+                  
+                  {imp.analysis_result?.affected_workflows?.map((wf, idx) => (
+                    <div key={idx} className="text-xs p-2 mt-2 rounded bg-slate-800/50">
+                      <strong>Affected:</strong> {wf.workflow} ({wf.step})<br/>
+                      <span className="text-muted">{wf.detail}</span>
+                    </div>
+                  ))}
+                </div>
+              ))
+            )}
+          </div>
+        </Card>
+      </div>
+
+      <Card title="Ingested Schemas">
+        <div className="table-container mt-4">
+          <table className="table">
+            <thead>
+              <tr>
+                <th>System Name</th>
+                <th>Version</th>
+                <th>Status</th>
+                <th>Fields</th>
+                <th>Ingested At</th>
+              </tr>
+            </thead>
+            <tbody>
+              {schemas.length === 0 && (
+                <tr><td colSpan="5" className="text-center py-4 text-muted">No schemas ingested yet.</td></tr>
+              )}
+              {schemas.map(s => (
+                <tr key={s.id}>
+                  <td className="font-medium">{s.system_name}</td>
+                  <td><span className="text-xs font-mono">v{s.version}</span></td>
+                  <td><StatusBadge status={s.status} /></td>
+                  <td className="text-sm text-muted">{s.fields?.length || 0} fields</td>
+                  <td className="text-sm text-muted">{new Date(s.created_at).toLocaleString()}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </Card>
     </div>

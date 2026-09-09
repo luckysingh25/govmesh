@@ -3,8 +3,16 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
-from app.main import app
+from app.main import app as fastapi_app
 from app.db.session import Base, get_db
+
+# Import models so Base.metadata knows about them
+from app.models.system import System
+from app.models.service_request import ServiceRequest
+from app.models.audit_log import AuditLog
+from app.models.workflow import WorkflowDefinition, WorkflowInstance, WorkflowStepInstance
+from app.models.data_lineage import DataLineage
+from app.models.intelligence import SystemSchema, SchemaField, MappingSuggestion, ImpactAnalysis
 
 test_engine = create_engine(
     "sqlite://",
@@ -21,8 +29,13 @@ def override_db():
     finally:
         db.close()
 
-app.dependency_overrides[get_db] = override_db
-client = TestClient(app)
+fastapi_app.dependency_overrides[get_db] = override_db
+
+# Mock SessionLocal used in main.py startup event
+import app.db.session
+app.db.session.SessionLocal = TestSession
+
+client = TestClient(fastapi_app)
 
 def test_create_and_list_systems():
     # Register and login as admin

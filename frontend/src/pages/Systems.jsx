@@ -43,6 +43,33 @@ const SystemCard = ({ name, type, icon: Icon, status, uptime, latency, protocol 
 );
 
 export const Systems = () => {
+  const [systems, setSystems] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState(null);
+
+  React.useEffect(() => {
+    import('../services/api').then(({ fetchSystemsMonitoring }) => {
+      fetchSystemsMonitoring()
+        .then(data => {
+          setSystems(data);
+          setLoading(false);
+        })
+        .catch(err => {
+          console.error(err);
+          setError(err.message);
+          setLoading(false);
+        });
+    });
+  }, []);
+
+  if (loading) {
+    return <div className="p-8 text-center text-muted fade-in">Loading systems health...</div>;
+  }
+
+  if (error) {
+    return <div className="p-8 text-center text-error fade-in">Failed to load systems: {error}</div>;
+  }
+
   return (
     <div className="flex-col gap-6 flex fade-in">
       <p className="text-muted max-w-3xl">
@@ -50,42 +77,18 @@ export const Systems = () => {
       </p>
       
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-        <SystemCard 
-          name="National Identity DB" 
-          type="Core Registry" 
-          icon={Database} 
-          status="Online" 
-          uptime="99.99%" 
-          latency="45ms" 
-          protocol="REST / JSON" 
-        />
-        <SystemCard 
-          name="State Property Records" 
-          type="State Dept" 
-          icon={Server} 
-          status="Online" 
-          uptime="99.95%" 
-          latency="120ms" 
-          protocol="SOAP / XML" 
-        />
-        <SystemCard 
-          name="City Municipality" 
-          type="Local Gov" 
-          icon={Globe} 
-          status="Degraded" 
-          uptime="98.50%" 
-          latency="850ms" 
-          protocol="Legacy API" 
-        />
-        <SystemCard 
-          name="Central Tax Authority" 
-          type="Federal Dept" 
-          icon={Lock} 
-          status="Online" 
-          uptime="99.99%" 
-          latency="65ms" 
-          protocol="gRPC" 
-        />
+        {systems.map((sys, idx) => (
+          <SystemCard 
+            key={idx}
+            name={sys.name} 
+            type={sys.system_type} 
+            icon={sys.name.includes("Identity") ? Database : sys.name.includes("Property") ? Server : sys.name.includes("Municipality") ? Globe : Lock} 
+            status={sys.status} 
+            uptime={`${sys.uptime_percent}%`} 
+            latency={`${sys.latency_ms}ms`} 
+            protocol={sys.protocol} 
+          />
+        ))}
       </div>
     </div>
   );

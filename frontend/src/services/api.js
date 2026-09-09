@@ -72,3 +72,141 @@ export const checkHealth = async () => {
   }
   return response.json();
 };
+
+export const fetchSystems = async () => {
+  const response = await fetch(`${API_BASE_URL}/systems`);
+  if (!response.ok) {
+    throw new Error('Failed to fetch systems.');
+  }
+  return response.json();
+};
+
+export const fetchSystemsMonitoring = async () => {
+  const response = await fetch(`${API_BASE_URL}/systems/monitoring`);
+  if (!response.ok) {
+    throw new Error('Failed to fetch monitoring metrics.');
+  }
+  return response.json();
+};
+
+// ── Workflow APIs ────────────────────────────────────────────────────
+
+export const fetchServiceRequests = async () => {
+  const response = await fetch(`${API_BASE_URL}/service-requests`);
+  if (!response.ok) {
+    throw new Error('Failed to fetch service requests.');
+  }
+  return response.json();
+};
+
+export const fetchWorkflowStatus = async (workflowId) => {
+  const response = await fetch(`${API_BASE_URL}/workflows/${workflowId}`);
+  if (!response.ok) {
+    throw new Error('Failed to fetch workflow status.');
+  }
+  return response.json();
+};
+
+export const fetchWorkflowTimeline = async (workflowId) => {
+  const response = await fetch(`${API_BASE_URL}/workflows/${workflowId}/timeline`);
+  if (!response.ok) {
+    throw new Error('Failed to fetch workflow timeline.');
+  }
+  return response.json();
+};
+
+export const fetchWorkflowByRequest = async (requestId) => {
+  const response = await fetch(`${API_BASE_URL}/workflows/by-request/${requestId}`);
+  if (response.status === 404) return null;
+  if (!response.ok) {
+    throw new Error('Failed to fetch workflow for request.');
+  }
+  return response.json();
+};
+
+export const startWorkflow = async (serviceRequestId) => {
+  const response = await fetch(`${API_BASE_URL}/workflows/start`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ service_request_id: serviceRequestId }),
+  });
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.detail || 'Failed to start workflow.');
+  }
+  return response.json();
+};
+
+// ── Audit & Lineage APIs ─────────────────────────────────────────────
+
+export const fetchGlobalAuditLogs = async (limit = 50) => {
+  const response = await fetch(`${API_BASE_URL}/audit?limit=${limit}`);
+  if (!response.ok) {
+    throw new Error('Failed to fetch audit logs.');
+  }
+  return response.json();
+};
+
+export const fetchAuditLogsByCorrelation = async (correlationId) => {
+  const response = await fetch(`${API_BASE_URL}/audit/correlation/${correlationId}`);
+  if (response.status === 404) return [];
+  if (!response.ok) {
+    throw new Error('Failed to fetch audit logs for correlation ID.');
+  }
+  return response.json();
+};
+
+export const fetchLineage = async (correlationId) => {
+  const response = await fetch(`${API_BASE_URL}/lineage/${correlationId}`);
+  if (!response.ok) {
+    throw new Error('Failed to fetch data lineage.');
+  }
+  return response.json();
+};
+
+export const fetchUnifiedTimeline = async (requestId) => {
+  const response = await fetch(`${API_BASE_URL}/timeline/${requestId}`);
+  if (response.status === 404) return null;
+  if (!response.ok) {
+    throw new Error('Failed to fetch unified timeline.');
+  }
+  return response.json();
+};
+
+// ── Intelligence APIs ─────────────────────────────────────────────
+
+export const fetchSchemas = async () => {
+  const response = await fetch(`${API_BASE_URL}/intelligence/schemas`);
+  if (!response.ok) throw new Error('Failed to fetch schemas.');
+  return response.json();
+};
+
+export const fetchSuggestions = async () => {
+  const response = await fetch(`${API_BASE_URL}/intelligence/suggestions`);
+  if (!response.ok) throw new Error('Failed to fetch suggestions.');
+  return response.json();
+};
+
+export const approveSuggestion = async (suggestionId) => {
+  const response = await fetch(`${API_BASE_URL}/intelligence/suggestions/${suggestionId}/approve`, { method: 'POST' });
+  if (!response.ok) throw new Error('Failed to approve suggestion.');
+  return response.json();
+};
+
+export const rejectSuggestion = async (suggestionId) => {
+  const response = await fetch(`${API_BASE_URL}/intelligence/suggestions/${suggestionId}/reject`, { method: 'POST' });
+  if (!response.ok) throw new Error('Failed to reject suggestion.');
+  return response.json();
+};
+
+export const fetchImpactAnalysis = async () => {
+  const response = await fetch(`${API_BASE_URL}/intelligence/impact`);
+  if (!response.ok) throw new Error('Failed to fetch impact analysis.');
+  return response.json();
+};
+
+export const triggerDemoScenario = async () => {
+  const response = await fetch(`${API_BASE_URL}/intelligence/demo/trigger`, { method: 'POST' });
+  if (!response.ok) throw new Error('Failed to trigger demo scenario.');
+  return response.json();
+};

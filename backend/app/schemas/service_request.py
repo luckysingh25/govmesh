@@ -33,6 +33,7 @@ class ServiceRequestResponse(BaseModel):
     consent_id: Optional[int] = None
     policy_decision: Optional[str] = None
     insights: list[IntelligenceInsight] = Field(default_factory=list)
+    workflow_id: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -43,4 +44,5 @@ class ServiceRequestListResponse(BaseModel):
     service_type: str
     status: str
     created_at: datetime
+    workflow_id: Optional[str] = None
     model_config = ConfigDict(from_attributes=True)
