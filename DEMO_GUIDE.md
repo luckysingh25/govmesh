@@ -1,56 +1,80 @@
-# GovMesh deterministic demo guide
+# GovMesh Deterministic Demo Guide
 
-## Before the demo
+## Before the Demo
 
-1. Start PostgreSQL, all four simulated department services, the backend, and the frontend using [SETUP.md](SETUP.md).
-2. Confirm `/health` on ports 8000, 8101, 8102, 8103, and 8104.
-3. Open `http://localhost:3000/consent`, grant consent for the citizen/service combination, then submit it at `http://localhost:3000/service-request`.
+1. Start all services using either:
+   - **One-Click**: Run `start_all.bat` (or `.\start_all.ps1`) from the repository root.
+   - **Manual**: Follow the multi-terminal commands in [SETUP.md](SETUP.md).
+2. Confirm health on ports 8000, 8101, 8102, 8103, and 8104.
+3. Open `http://localhost:3000`.
 
-For `business_registration`, consent must include identity, property, municipality, and tax. `property_transfer` requires identity, property, and municipality. `tax_clearance` requires identity and tax.
+---
 
-## Recommended presentation sequence
+## Recommended Presentation Sequence
 
-### 1. Consent gate
+### 1. Consent Policy Gate
+1. Navigate to **Service Request** (`/service-request`).
+2. Submit a request for `CIT-1001` *before* granting consent.
+3. Show that the policy gate immediately returns a clean denial without contacting any external department.
+4. Go to **Consent & Policy** (`/consent`), grant consent for `CIT-1001` on `business_registration`, and resubmit.
 
-Submit `CIT-1001` before granting consent. Explain that the policy gate returns a denial without contacting a department. Then grant business-registration consent and resubmit.
+---
 
-### 2. Healthy interoperability
+### 2. Healthy Interoperability
+- Use `CIT-1001` (Asha Verma).
+- All 4 departments succeed concurrently (Identity REST, Municipality REST, Property SOAP, Tax Async).
+- The Advisory Insights section confirms clean, consistent records across all departments.
 
-Use `CIT-1001` (Asha Verma). All four normalized results succeed and the Advisory Insights section reports no detected issue.
+---
 
-### 3. Explainable advisory
+### 3. Explainable Cross-System Advisory Scenarios
+Demonstrate deterministic cross-system edge cases using pre-seeded fixtures:
 
-Use one or more of these fictional scenarios:
+| Citizen ID | Name | Demonstration & Outcome |
+| :--- | :--- | :--- |
+| `CIT-1002` | Nila Rao | Tax status is `DUE` (outstanding `14,500.5`); triggers `TAX_CLEARANCE_NOT_CONFIRMED`. |
+| `CIT-1003` | Omar Das | Property record absent; partial result with `DEPARTMENT_RESULTS_UNAVAILABLE`. |
+| `CIT-1004` | Leela Sen | Municipal record absent; partial result without fake data generation. |
+| `CIT-1005` | Ishan Kapoor | Identity record absent; fails gracefully. |
+| `CIT-1006` | Kabir Jain | Property owner differs (`Kabir A. Jain` vs `Kabir Jain`); triggers `CROSS_SYSTEM_NAME_MISMATCH`. |
+| `CIT-1007` | Mira Bose | Municipal address differs; triggers `CROSS_SYSTEM_ADDRESS_MISMATCH`. |
+| `CIT-1008` | Tara Mehta | Asynchronous tax job still processing; returns clean pending state. |
 
-| Citizen | Result to demonstrate |
-| --- | --- |
-| `CIT-1002` — Nila Rao | Tax status `DUE`, outstanding amount `14500.5`, warning `TAX_CLEARANCE_NOT_CONFIRMED` |
-| `CIT-1003` — Omar Das | Property record is absent; partial result and `DEPARTMENT_RESULTS_UNAVAILABLE` |
-| `CIT-1004` — Leela Sen | Municipality record is absent; partial result and `DEPARTMENT_RESULTS_UNAVAILABLE` |
-| `CIT-1005` — Ishan Kapoor | Identity record is absent; no identity is fabricated |
-| `CIT-1006` — Kabir Jain | Property owner deliberately differs; `CROSS_SYSTEM_NAME_MISMATCH` |
-| `CIT-1007` — Mira Bose | Municipality address deliberately differs; `CROSS_SYSTEM_ADDRESS_MISMATCH` |
-| `CIT-1008` — Tara Mehta | Tax job remains pending; informational `TAX_CLEARANCE_NOT_CONFIRMED` |
+Explain that all rules are deterministic, explainable integration validations—not black-box AI decisions.
 
-Explain that each stable rule ID comes from deterministic comparisons of normalized results. These are advisory integration checks, not AI predictions, fraud scores, eligibility decisions, or legal decisions.
+---
 
-### 4. Protocol adaptation
+### 4. Multi-Protocol Legacy Adaptation
+Show how GovMesh federates heterogeneous government protocols into one unified response:
+- **Identity & Municipality**: JSON REST with Bearer / API Key headers.
+- **Property**: Legacy SOAP/XML with envelope parsing.
+- **Tax**: Asynchronous job submission and polling.
 
-Show that Identity and Municipality return JSON REST payloads, Property returns SOAP/XML, and Tax uses a submit/result job shape. The backend exposes one consistent department-result structure without hiding missing, pending, timeout, or unavailable states.
+---
 
-### 5. Real monitoring and auditability
+### 5. Live Monitoring, Lineage & Unified Timeline
+1. Open **Systems & Depts** (`/systems`): displays live reachability and latency for all 4 microservices.
+2. Open **App Tracking** (`/tracking`): view the request's immutable `X-Correlation-ID`.
+3. Open **Audit Activity** (`/audit`): inspect field-level data lineage (e.g. `Identity DB.full_name` $\rightarrow$ `GovMesh Response.citizen.name`).
+4. Click on any application to view the chronological **Unified Timeline** combining audit events and workflow step transitions.
 
-Open the Systems page. Status and latency come from concurrent calls to each real department `/health` endpoint. “Not measured” is intentional for historical metrics. Then show the request’s correlation ID in workflow/audit views.
+---
 
-## Accurate technical claims
+### 6. Interoperability Intelligence & Schema Evolution
+1. Open **Intelligence Mapping** (`/intelligence`).
+2. Click **Trigger Upgrade Demo**:
+   - Demonstrates Property System upgrading from Version 1 (`ownerName`) to Version 2 (`propertyOwnerName`).
+3. Show **Impact Analysis**:
+   - Flags breaking change: `Affected: Business Registration (Property System Integration) — Field mapping for ['ownerName'] is now broken`.
+4. Show **Mapping Approvals**:
+   - View newly suggested field mapping for `propertyOwnerName -> citizen.name` (95% confidence).
+   - Click **Approve** to demonstrate real-time human governance, and switch to the **Approved** tab to see the verified active mapping.
 
-- Workflow execution is synchronous and sequential in this prototype.
-- A department failure degrades the aggregate without generating fake citizen data.
-- Redis is optional and is not currently a background workflow worker.
-- PostgreSQL stores orchestration, consent, mapping, audit, and lineage metadata—not a permanent centralized copy of department source records.
-- Public registration cannot create administrators or data stewards.
-- Schema-change demo data is repeatable: triggering it more than once does not create unlimited versions.
+---
 
-## Resetting demo state
+## Technical Architecture Highlights
 
-For a native database, use your normal PostgreSQL administration process and rerun `python -m alembic upgrade head`. Do not delete an unknown database automatically. For the Compose-only demo database, `docker compose down -v` deletes its named volume and all contained demo data.
+- **Concurrency**: Connector queries run in parallel via `asyncio.gather` with batched database transactions.
+- **Graceful Degradation**: Microservice failure isolates the step without halting the entire platform or generating hallucinated citizen records.
+- **Data Sovereignty**: PostgreSQL stores workflow orchestration, consent, mapping, and audit metadata—not permanent centralized copies of departmental databases.
+- **Security**: Strict role-based access control (RBAC), bcrypt-hashed passwords, and isolated demo endpoints.

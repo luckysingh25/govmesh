@@ -10,20 +10,31 @@ import { BrainCircuit, Play, Check, X, AlertTriangle, Layers, GitMerge } from 'l
 export const Intelligence = () => {
   const [schemas, setSchemas] = useState([]);
   const [suggestions, setSuggestions] = useState([]);
+  const [approvedSuggestions, setApprovedSuggestions] = useState([]);
+  const [activeTab, setActiveTab] = useState('pending');
   const [impacts, setImpacts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [demoLoading, setDemoLoading] = useState(false);
+  const [actionLoading, setActionLoading] = useState(null);
+  const [toastMessage, setToastMessage] = useState(null);
+
+  const showToast = (msg) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3000);
+  };
 
   const loadData = async () => {
     setLoading(true);
     try {
-      const [sData, sugData, iData] = await Promise.all([
+      const [sData, sugData, appData, iData] = await Promise.all([
         fetchSchemas(),
-        fetchSuggestions(),
+        fetchSuggestions('pending'),
+        fetchSuggestions('approved'),
         fetchImpactAnalysis()
       ]);
       setSchemas(sData);
       setSuggestions(sugData);
+      setApprovedSuggestions(appData);
       setImpacts(iData);
     } catch (e) {
       console.error(e);
@@ -42,22 +53,55 @@ export const Intelligence = () => {
     setDemoLoading(true);
     try {
       await triggerDemoScenario();
+      showToast('Demo scenario triggered successfully!');
       await loadData();
     } catch (e) {
       console.error(e);
+      showToast('Failed to trigger demo scenario.');
     } finally {
       setDemoLoading(false);
     }
   };
 
   const handleApprove = async (id) => {
-    await approveSuggestion(id);
-    loadData();
+    const item = suggestions.find(s => s.id === id);
+    setActionLoading(id);
+    // Optimistic UI update
+    setSuggestions(prev => prev.filter(s => s.id !== id));
+    if (item) {
+      setApprovedSuggestions(prev => [{ ...item, status: 'approved' }, ...prev]);
+    }
+    showToast(`Approved mapping for ${item?.source_field?.field_name || 'field'}`);
+
+    try {
+      await approveSuggestion(id);
+      loadData();
+    } catch (e) {
+      console.error(e);
+      showToast('Error approving suggestion.');
+      loadData();
+    } finally {
+      setActionLoading(null);
+    }
   };
 
   const handleReject = async (id) => {
-    await rejectSuggestion(id);
-    loadData();
+    const item = suggestions.find(s => s.id === id);
+    setActionLoading(id);
+    // Optimistic UI update
+    setSuggestions(prev => prev.filter(s => s.id !== id));
+    showToast(`Rejected mapping for ${item?.source_field?.field_name || 'field'}`);
+
+    try {
+      await rejectSuggestion(id);
+      loadData();
+    } catch (e) {
+      console.error(e);
+      showToast('Error rejecting suggestion.');
+      loadData();
+    } finally {
+      setActionLoading(null);
+    }
   };
 
   return (
@@ -79,43 +123,115 @@ export const Intelligence = () => {
         </button>
       </div>
 
+      {toastMessage && (
+        <div style={{
+          padding: '0.75rem 1rem',
+          background: 'rgba(56, 189, 248, 0.15)',
+          border: '1px solid rgba(56, 189, 248, 0.4)',
+          borderRadius: 8,
+          color: 'var(--text-primary)',
+          fontSize: '0.875rem',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.5rem'
+        }}>
+          <Check size={16} className="text-accent" />
+          <span>{toastMessage}</span>
+        </div>
+      )}
+
       <div className="dept-grid">
         <Card title="Mapping Approvals" className="flex-1">
+          {/* Tabs for Pending vs Approved */}
+          <div className="flex gap-2 mb-4 border-b border-border pb-2">
+            <button
+              className={`btn btn-sm ${activeTab === 'pending' ? 'btn-primary' : 'btn-secondary'}`}
+              style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }}
+              onClick={() => setActiveTab('pending')}
+            >
+              Pending ({suggestions.length})
+            </button>
+            <button
+              className={`btn btn-sm ${activeTab === 'approved' ? 'btn-primary' : 'btn-secondary'}`}
+              style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }}
+              onClick={() => setActiveTab('approved')}
+            >
+              Approved ({approvedSuggestions.length})
+            </button>
+          </div>
+
           <div className="flex flex-col gap-4 mt-2">
-            {suggestions.length === 0 ? (
-              <p className="text-muted text-sm text-center py-4">No pending suggestions.</p>
-            ) : (
-              suggestions.map(sug => (
-                <div key={sug.id} style={{ padding: '1rem', background: 'rgba(15,23,42,0.4)', borderRadius: 8, border: '1px solid var(--border)' }}>
-                  <div className="flex justify-between items-start mb-3">
-                    <div>
-                      <div className="text-xs text-muted mb-1 font-mono">ID: {sug.source_field_id}</div>
-                      <div className="font-medium flex items-center gap-2">
-                        {sug.source_field?.field_name || `Field ${sug.source_field_id}`}
-                        <GitMerge size={14} className="text-muted" />
-                        <span className="text-accent">{sug.target_field}</span>
+            {activeTab === 'pending' ? (
+              suggestions.length === 0 ? (
+                <p className="text-muted text-sm text-center py-4">No pending suggestions. All mappings are reviewed!</p>
+              ) : (
+                suggestions.map(sug => (
+                  <div key={sug.id} style={{ padding: '1rem', background: 'rgba(15,23,42,0.4)', borderRadius: 8, border: '1px solid var(--border)' }}>
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <div className="text-xs text-muted mb-1 font-mono">ID: {sug.source_field_id}</div>
+                        <div className="font-medium flex items-center gap-2">
+                          {sug.source_field?.field_name || `Field ${sug.source_field_id}`}
+                          <GitMerge size={14} className="text-muted" />
+                          <span className="text-accent">{sug.target_field}</span>
+                        </div>
+                      </div>
+                      <StatusBadge status={sug.mapping_type} />
+                    </div>
+                    
+                    <div className="flex items-center justify-between mt-4">
+                      <div className="text-xs">
+                        Confidence: <strong className={sug.confidence_score > 0.8 ? 'text-success' : 'text-warning'}>
+                          {(sug.confidence_score * 100).toFixed(0)}%
+                        </strong>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          className="btn btn-secondary text-error"
+                          style={{ padding: '0.25rem 0.5rem' }}
+                          disabled={actionLoading === sug.id}
+                          onClick={() => handleReject(sug.id)}
+                        >
+                          <X size={14} /> Reject
+                        </button>
+                        <button
+                          className="btn btn-primary"
+                          style={{ padding: '0.25rem 0.5rem' }}
+                          disabled={actionLoading === sug.id}
+                          onClick={() => handleApprove(sug.id)}
+                        >
+                          {actionLoading === sug.id ? <span className="spin">↻</span> : <Check size={14} />} Approve
+                        </button>
                       </div>
                     </div>
-                    <StatusBadge status={sug.mapping_type} />
                   </div>
-                  
-                  <div className="flex items-center justify-between mt-4">
-                    <div className="text-xs">
-                      Confidence: <strong className={sug.confidence_score > 0.8 ? 'text-success' : 'text-warning'}>
-                        {(sug.confidence_score * 100).toFixed(0)}%
-                      </strong>
+                ))
+              )
+            ) : (
+              approvedSuggestions.length === 0 ? (
+                <p className="text-muted text-sm text-center py-4">No approved mappings yet.</p>
+              ) : (
+                approvedSuggestions.map(sug => (
+                  <div key={sug.id} style={{ padding: '1rem', background: 'rgba(34, 197, 94, 0.05)', borderRadius: 8, border: '1px solid rgba(34, 197, 94, 0.2)' }}>
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <div className="text-xs text-muted mb-1 font-mono">ID: {sug.source_field_id}</div>
+                        <div className="font-medium flex items-center gap-2">
+                          {sug.source_field?.field_name || `Field ${sug.source_field_id}`}
+                          <GitMerge size={14} className="text-muted" />
+                          <span className="text-accent">{sug.target_field}</span>
+                        </div>
+                      </div>
+                      <span className="badge badge-success flex items-center gap-1" style={{ fontSize: '0.7rem', padding: '0.2rem 0.5rem' }}>
+                        <Check size={12} /> APPROVED
+                      </span>
                     </div>
-                    <div className="flex gap-2">
-                      <button className="btn btn-secondary text-error" style={{ padding: '0.25rem 0.5rem' }} onClick={() => handleReject(sug.id)}>
-                        <X size={14} /> Reject
-                      </button>
-                      <button className="btn btn-primary" style={{ padding: '0.25rem 0.5rem' }} onClick={() => handleApprove(sug.id)}>
-                        <Check size={14} /> Approve
-                      </button>
+                    <div className="text-xs text-muted mt-2">
+                      Confidence: <strong>{(sug.confidence_score * 100).toFixed(0)}%</strong> • Type: <span className="font-mono">{sug.mapping_type}</span>
                     </div>
                   </div>
-                </div>
-              ))
+                ))
+              )
             )}
           </div>
         </Card>

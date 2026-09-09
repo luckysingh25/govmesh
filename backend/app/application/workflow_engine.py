@@ -142,20 +142,54 @@ class WorkflowEngine:
     # ── Synchronous fallback (no Redis) ────────────────────────────────
 
     async def execute_workflow_sync(self, db: Session, workflow_instance_id: int) -> None:
-        """Run all steps inline — used when Redis is unavailable or in tests."""
+        """Run all steps inline — optimized with concurrent connector execution and batch commit."""
         workflow = db.get(WorkflowInstance, workflow_instance_id)
         if workflow is None:
             return
 
         workflow.status = "running"
+        now = datetime.now(timezone.utc)
+        for s in workflow.steps:
+            s.status = "running"
+            s.attempt_count += 1
+            s.started_at = now
         db.commit()
 
-        for step in workflow.steps:
-            await self.execute_step(db, step.id, allow_retry=False)
+        # Run connectors concurrently to reduce latency across network
+        async def _run_step_connector(step: WorkflowStepInstance):
+            connector_cls = CONNECTOR_MAP.get(step.step_name)
+            if connector_cls is None:
+                return step, ConnectorResult(step.step_name, "failed", {}, f"No connector for department: {step.step_name}")
+            c = connector_cls()
+            try:
+                result = await c.fetch_data(workflow.citizen_id)
+                return step, result
+            except Exception as exc:
+                return step, ConnectorResult(step.step_name, "failed", {}, str(exc))
+            finally:
+                await c.close()
 
-            # If step failed and exhausted retries, continue to next step
-            # (graceful degradation — don't block the whole workflow)
-            db.refresh(step)
+        step_tasks = [_run_step_connector(step) for step in workflow.steps]
+        step_outcomes = await asyncio.gather(*step_tasks, return_exceptions=True)
+
+        comp_time = datetime.now(timezone.utc)
+        for outcome in step_outcomes:
+            if isinstance(outcome, Exception):
+                logger.error("step_execution_exception %s", outcome)
+                continue
+            step, result = outcome
+            step.completed_at = comp_time
+            if result.status == "success":
+                step.status = "success"
+                step.result_data = result.data
+                step.error_message = None
+            else:
+                step.status = result.status
+                step.error_message = result.error or "Unknown error"
+                step.result_data = result.data if result.data else None
+
+        workflow.current_step_index = max(0, len(workflow.steps) - 1)
+        self._finalize_workflow(db, workflow, list(workflow.steps))
 
     # ── Retry logic ────────────────────────────────────────────────────
 

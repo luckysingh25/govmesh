@@ -102,7 +102,6 @@ class ServiceRequestService:
             status="processing",
         )
         db.add(record)
-        db.commit()
 
         self._audit.log_event(
             db=db,
@@ -111,11 +110,12 @@ class ServiceRequestService:
             target="GovMesh Core",
             detail=f"Initiated {service_type}",
             outcome="success",
-            correlation_id=correlation_id
+            correlation_id=correlation_id,
+            commit=False,
         )
 
         # --- Policy gate ---
-        policy = PolicyService().evaluate(db, citizen_id, service_type, correlation_id)
+        policy = PolicyService().evaluate(db, citizen_id, service_type, correlation_id, commit=False)
         if policy.decision == "deny":
             record.status = "denied"
             record.completed_at = datetime.now(timezone.utc)
@@ -178,17 +178,17 @@ class ServiceRequestService:
 
         if identity_data.get("full_name"):
             citizen_name = identity_data["full_name"]
-            self._data_lineage.record_lineage(db, correlation_id, "Identity DB", "full_name", "GovMesh Response", "citizen.name", "exact match", request_id)
+            self._data_lineage.record_lineage(db, correlation_id, "Identity DB", "full_name", "GovMesh Response", "citizen.name", "exact match", request_id, commit=False)
         elif municipality_data.get("resident_name"):
             citizen_name = municipality_data["resident_name"]
-            self._data_lineage.record_lineage(db, correlation_id, "Municipality Records", "resident_name", "GovMesh Response", "citizen.name", "fallback map", request_id)
+            self._data_lineage.record_lineage(db, correlation_id, "Municipality Records", "resident_name", "GovMesh Response", "citizen.name", "fallback map", request_id, commit=False)
 
         if identity_data.get("address"):
             citizen_address = identity_data["address"]
-            self._data_lineage.record_lineage(db, correlation_id, "Identity DB", "address", "GovMesh Response", "citizen.address", "exact match", request_id)
+            self._data_lineage.record_lineage(db, correlation_id, "Identity DB", "address", "GovMesh Response", "citizen.address", "exact match", request_id, commit=False)
         elif municipality_data.get("address"):
             citizen_address = municipality_data["address"]
-            self._data_lineage.record_lineage(db, correlation_id, "Municipality Records", "address", "GovMesh Response", "citizen.address", "fallback map", request_id)
+            self._data_lineage.record_lineage(db, correlation_id, "Municipality Records", "address", "GovMesh Response", "citizen.address", "fallback map", request_id, commit=False)
 
         self._audit.log_event(
             db=db,

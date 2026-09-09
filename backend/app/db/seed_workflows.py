@@ -15,13 +15,20 @@ DEFAULT_DEFINITIONS = [
 
 def seed_workflow_definitions(db: Session) -> None:
     """Insert default WorkflowDefinition rows if they don't already exist."""
+    existing_records = {w.name: w for w in db.query(WorkflowDefinition).all()}
+    needs_commit = False
     for defn in DEFAULT_DEFINITIONS:
-        existing = db.query(WorkflowDefinition).filter_by(name=defn["name"]).first()
-        if existing is None:
-            record = WorkflowDefinition(**defn)
-            db.add(record)
-            logger.info("seeded_workflow_definition name=%s", defn["name"])
+        name = defn["name"]
+        if name not in existing_records:
+            db.add(WorkflowDefinition(**defn))
+            needs_commit = True
+            logger.info("seeded_workflow_definition name=%s", name)
         else:
-            existing.description = defn["description"]
-            existing.steps = list(defn["steps"])
-    db.commit()
+            rec = existing_records[name]
+            if rec.description != defn["description"] or rec.steps != list(defn["steps"]):
+                rec.description = defn["description"]
+                rec.steps = list(defn["steps"])
+                needs_commit = True
+
+    if needs_commit:
+        db.commit()

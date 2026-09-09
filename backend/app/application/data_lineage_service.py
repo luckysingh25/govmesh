@@ -18,6 +18,7 @@ class DataLineageService:
         destination_field: str,
         transformation: Optional[str] = None,
         service_request_id: Optional[str] = None,
+        commit: bool = True,
     ) -> DataLineage:
         record = DataLineage(
             correlation_id=correlation_id,
@@ -29,8 +30,9 @@ class DataLineageService:
             transformation=transformation,
         )
         db.add(record)
-        db.commit()
-        db.refresh(record)
+        if commit:
+            db.commit()
+            db.refresh(record)
         
         logger.info(
             "data_lineage_recorded correlation_id=%s source=%s.%s dest=%s.%s",

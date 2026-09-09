@@ -16,9 +16,18 @@ _service = ServiceRequestService()
 def list_requests(db: Session = Depends(get_db)):
     """List all service requests (applications) with their workflow IDs."""
     requests = db.query(ServiceRequest).order_by(ServiceRequest.created_at.desc()).limit(100).all()
+    request_ids = [sr.request_id for sr in requests if sr.request_id]
+    
+    # Batch load workflows in a single query instead of N queries
+    wf_map = {}
+    if request_ids:
+        workflows = db.query(WorkflowInstance).filter(WorkflowInstance.service_request_id.in_(request_ids)).all()
+        for wf in workflows:
+            if wf.service_request_id not in wf_map:
+                wf_map[wf.service_request_id] = wf.workflow_id
+
     results = []
     for sr in requests:
-        wf = db.query(WorkflowInstance).filter_by(service_request_id=sr.request_id).first()
         results.append(ServiceRequestListResponse(
             id=sr.id,
             request_id=sr.request_id,
@@ -32,7 +41,7 @@ def list_requests(db: Session = Depends(get_db)):
                 if sr.completed_at and sr.created_at
                 else None
             ),
-            workflow_id=wf.workflow_id if wf else None,
+            workflow_id=wf_map.get(sr.request_id),
         ))
     return results
 
