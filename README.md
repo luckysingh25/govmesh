@@ -1,144 +1,88 @@
 # GovMesh MVP
-**SIH 2026 Project (Problem Statement SIH26129)**
 
-GovMesh is an interoperable platform connecting disparate government service data into a unified experience. This repository contains the initial Minimum Viable Product (MVP) representing the first vertical slice: the **Citizen Service Request** flow.
+GovMesh is a prototype interoperability layer for SIH26129. It coordinates consent-aware service requests across simulated government departments, normalizes REST and SOAP responses, records workflow/audit metadata, and produces transparent rule-based advisory insights.
 
-## 🏛️ Project Structure
+This repository contains:
 
-- **`frontend/`**: React + Vite UI application. Displays the unified citizen data.
-- **`backend/`**: FastAPI backend that orchestrates data retrieval across multiple departments using concurrent async connectors, normalizes data, and logs requests to PostgreSQL.
-- **`services/`**: Mocked legacy/remote government systems.
-  - `identity-service`: Mock REST API returning JSON (Token Auth).
-  - `property-service`: Mock SOAP API returning XML (Requires XML parsing).
-  - `municipality-service`: Mock REST API returning JSON (API Key Auth).
-  - `tax-service`: Mock REST API returning JSON.
-- **`database/`**: Configured PostgreSQL & Redis containers via `docker-compose`.
+- `frontend/`: React 18 and Vite operator/citizen interface.
+- `backend/`: FastAPI API, synchronous workflow engine, consent/policy checks, audit and lineage records, and deterministic intelligence rules.
+- `services/`: simulated Identity (REST + bearer token), Municipality (REST + API key), Property (SOAP/XML), and Tax (asynchronous-style REST) systems.
+- `services/seed/`: fictional, deterministic records for `CIT-1001` through `CIT-1008` plus scenario expectations.
+- `docker-compose.yml`: optional full-stack container configuration with PostgreSQL and Redis.
 
----
+## Architecture and ports
 
-## 🚀 Local Quick Start (no Docker required)
+| Component | URL | Purpose |
+| --- | --- | --- |
+| Frontend | `http://localhost:3000` | UI |
+| Backend | `http://localhost:8000` | API and OpenAPI docs |
+| Identity | `http://localhost:8101` | REST identity records |
+| Municipality | `http://localhost:8102` | REST municipal records |
+| Property | `http://localhost:8103` | SOAP/XML property records |
+| Tax | `http://localhost:8104` | asynchronous-style tax lookup |
 
-GovMesh runs natively on macOS/zsh. You need a local PostgreSQL server; Redis is optional for this MVP and its unavailable status does not block the request flow.
+The prototype executes workflow steps synchronously and sequentially so a submitted request has a reliable final state before the response is returned. Redis is included for future event-driven execution but is not required by the current request path.
 
-**Local Ports Map**:
-- Frontend UI: `http://localhost:3000` (run natively using `npm run dev`)
-- Backend API: `http://localhost:8000`
-- Identity Service: `http://localhost:8101`
-- Municipality Service: `http://localhost:8102`
-- Property Service: `http://localhost:8103`
-- Tax Service: `http://localhost:8104`
+## Quick start
 
----
+Use [SETUP.md](SETUP.md) for complete Windows, macOS/Linux, migration, native, and Docker instructions.
 
-## 🏃 Running Components Natively
+For native development:
 
-### 1. Database
-```bash
-# Start your installed PostgreSQL service, then create the MVP database once.
-createdb govmesh
-# If your local PostgreSQL username is not govmesh, set DATABASE_URL in backend/.env.
-```
+1. Copy `backend/.env.example` to `backend/.env`, set a PostgreSQL `DATABASE_URL` and a non-default `SECRET_KEY`, then run `alembic upgrade head` from `backend/`.
+2. Start the four department services on ports 8101–8104.
+3. Start the backend on 8000 and the frontend on 3000.
+4. Grant consent for the chosen service type before submitting a request.
 
-### 2. Mock Department Services
-Open separate terminals for each service and run:
-```bash
-# Identity Service (Port 8101)
-cd services/identity-service
-pip install -r requirements.txt
-python3 -m uvicorn app:app --reload --port 8101
+The three supported service types use one central workflow definition:
 
-# Municipality Service (Port 8102)
-cd services/municipality-service
-pip install -r requirements.txt
-python3 -m uvicorn app:app --reload --port 8102
+| Service type | Required departments |
+| --- | --- |
+| `business_registration` | identity, property, municipality, tax |
+| `property_transfer` | identity, property, municipality |
+| `tax_clearance` | identity, tax |
 
-# Property Service (Port 8103)
-cd services/property-service
-pip install -r requirements.txt
-python3 -m uvicorn app:app --reload --port 8103
+## Deterministic demo scenarios
 
-# Tax Service (Port 8104)
-cd services/tax-service
-pip install -r requirements.txt
-python3 -m uvicorn app:app --reload --port 8104
-```
+All people, addresses, and identifiers are fictional demo fixtures.
 
-### 3. Backend Core
+| Citizen | Scenario | Expected advisory |
+| --- | --- | --- |
+| `CIT-1001` | healthy and consistent | none |
+| `CIT-1002` | tax due | `TAX_CLEARANCE_NOT_CONFIRMED` |
+| `CIT-1003` | property missing | `DEPARTMENT_RESULTS_UNAVAILABLE` |
+| `CIT-1004` | municipality missing | `DEPARTMENT_RESULTS_UNAVAILABLE` |
+| `CIT-1005` | identity missing | `DEPARTMENT_RESULTS_UNAVAILABLE` |
+| `CIT-1006` | owner-name mismatch | `CROSS_SYSTEM_NAME_MISMATCH` |
+| `CIT-1007` | address mismatch | `CROSS_SYSTEM_ADDRESS_MISMATCH` |
+| `CIT-1008` | tax pending | `TAX_CLEARANCE_NOT_CONFIRMED` (info) |
+
+Seed files are validated when each simulated service starts. A missing, invalid, or duplicate record fails startup with a clear error; connectors never fabricate substitute citizen data.
+
+## Advisory intelligence
+
+After normalization, pure deterministic rules examine only the available department results. Every finding has a stable `rule_id`, `info` or `warning` severity, and a plain-language message. Name/address comparison trims whitespace, collapses repeated spaces, and compares case-insensitively. The UI labels this output “Advisory Insights” and states that it does not make eligibility or approval decisions.
+
+## Tests
+
 ```bash
 cd backend
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-cp .env.example .env
+python -m pytest -q
 
-# Run migrations to set up Postgres Schema
-alembic upgrade head
-
-# Start API
-python3 -m uvicorn app.main:app --reload --port 8000
+cd ../frontend
+npm ci
+npm test
+npm run build
 ```
 
-### 4. React Frontend
-```bash
-cd frontend
-npm install
-npm run dev
-# Open http://localhost:3000
-```
+CI runs the same backend tests and frontend test/build checks for pull requests. Runtime databases, logs, caches, editor settings, environment secrets, and build outputs are ignored.
 
----
+## Security boundaries
 
-## 🛠️ Usage Examples
+- Public registration always creates a `citizen`; callers cannot self-assign privileged roles.
+- Passwords are validated and stored only as hashes.
+- Schema ingestion and mapping approval/rejection require `admin` or `data_steward`.
+- The repeatable intelligence demo trigger is available only in development, demo, or test environments.
+- `.env` files are never committed; use the checked-in examples as templates.
 
-### 1. Health Checks
-Verify that all services are alive:
-```bash
-curl http://localhost:8000/health
-curl http://localhost:8101/health
-```
-
-### 2. Example Service Request
-**Endpoint**: `POST /api/v1/service-requests`
-
-**Request Body**:
-```json
-{
-  "citizen_id": "CIT-1001",
-  "service_type": "business_registration"
-}
-```
-
-**Curl Command**:
-```bash
-curl -X POST http://localhost:8000/api/v1/service-requests \
-     -H "Content-Type: application/json" \
-     -H "X-Correlation-ID: demo-request-001" \
-     -d '{"citizen_id": "CIT-1001", "service_type": "business_registration"}'
-```
-
-**Response**:
-```json
-{
-  "request_id": "REQ-B892F20C",
-  "correlation_id": "0208cd44-fb4d-4ba6-829b-a9bdf118e6ff",
-  "citizen": {
-    "citizen_id": "CIT-1001",
-    "name": "Rajesh Kumar",
-    "address": "123 MG Road, Bangalore, Karnataka"
-  },
-  "identity": {
-    "status": "success",
-    "data": { "full_name": "Rajesh Kumar", "date_of_birth": "1985-06-15" }
-  },
-  "overall_status": "completed"
-}
-```
-*(Responses contain unified data from Property, Municipality, and Tax modules alongside the identity chunk)*
-
-## Interoperability intelligence
-
-After all department connector responses are normalized and aggregated, the backend runs a small deterministic rule engine and returns advisory findings in the response's `insights` list. Current rules flag incomplete identity data, missing property information, missing municipality registration, unconfirmed tax clearance, and unavailable department results.
-
-Each insight contains a stable `rule_id`, a severity, and a concise explanation. `info` indicates a result that may still be pending; `warning` identifies missing, failed, or non-clear data that needs review. The engine does not call department systems, inspect raw protocol payloads, or make legal, fraud, eligibility, or final government decisions.
-
-To add a rule, define a side-effect-free function in `backend/app/intelligence/rules.py` that reads normalized `ConnectorResult` values, then add it to the ordered `RULES` tuple in `engine.py` and cover it with focused tests.
+This is a prototype, not a production identity, authorization, eligibility, or legal decision system.

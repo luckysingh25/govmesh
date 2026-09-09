@@ -1,276 +1,147 @@
-# 🛠️ GovMesh — Full Project Setup Guide
+# GovMesh setup guide
 
-> **Smart India Hackathon 2026 — Problem Statement SIH26129**  
-> Interoperable, Federated Government Data Mesh Platform with Dynamic Consent & Real-Time Orchestration.
+## Prerequisites
 
----
+- Python 3.12 recommended
+- Node.js 20 and npm
+- PostgreSQL 15+
+- Git
+- Docker Desktop only if using the optional container workflow
 
-## 📋 Table of Contents
-1. [Prerequisites](#1-prerequisites)
-2. [Architecture Overview](#2-architecture-overview)
-3. [Environment Configuration (.env)](#3-environment-configuration-env)
-4. [Step-by-Step Installation](#4-step-by-step-installation)
-   - [A. Python Virtual Environment & Dependencies](#a-python-virtual-environment--dependencies)
-   - [B. Database Setup (Neon PostgreSQL)](#b-database-setup-neon-postgresql)
-   - [C. Frontend Setup (React + Vite)](#c-frontend-setup-react--vite)
-5. [Starting All Services (Terminal Commands)](#5-starting-all-services-terminal-commands)
-6. [One-Click Startup Scripts](#6-one-click-startup-scripts)
-7. [Verification & Health Checks](#7-verification--health-checks)
-8. [Troubleshooting & FAQs](#8-troubleshooting--faqs)
+Redis is optional for the current synchronous prototype.
 
----
+## Environment configuration
 
-## 1. Prerequisites
+Never commit real credentials. For native development, copy `backend/.env.example` to `backend/.env` and replace the database password and `SECRET_KEY`. For Docker Compose, copy the root `.env.example` to `.env` and replace the development password.
 
-Ensure you have the following installed on your machine:
-
-| Component | Minimum Version | Check Command |
-| :--- | :--- | :--- |
-| **Python** | 3.10+ (3.11 or 3.12 recommended) | `python --version` or `python3 --version` |
-| **Node.js** | 18.x or 20.x | `node -v` |
-| **npm** | 9.x or 10.x | `npm -v` |
-| **PostgreSQL** | 15+ (Cloud Neon or Local) | Provided in cloud via Neon |
-| **Git** | 2.x | `git --version` |
-
----
-
-## 2. Architecture Overview & Port Allocation
-
-GovMesh uses an asynchronous federated architecture where the Backend Core orchestrates calls to 4 departmental microservices.
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    GovMesh Architecture                     │
-└─────────────────────────────────────────────────────────────┘
-                               │
-               ┌───────────────┴───────────────┐
-               ▼                               ▼
-       [ Frontend (UI) ]              [ Backend Core API ]
-     http://localhost:3000           http://localhost:8000
-                                               │
-     ┌──────────────────┬──────────────────────┼──────────────────┐
-     ▼                  ▼                      ▼                  ▼
-[ Identity ]      [ Property ]          [ Municipality ]       [ Tax ]
-  Port 8101          Port 8102             Port 8103          Port 8104
-```
-
-| Service | Technology | Port | Directory |
-| :--- | :--- | :--- | :--- |
-| **Backend Core** | FastAPI + SQLAlchemy + Asyncpg | `8000` | `backend/` |
-| **Frontend UI** | React 18 + Vite + Lucide Icons | `3000` | `frontend/` |
-| **Identity Service** | FastAPI (REST + Token Auth) | `8101` | `services/identity-service/` |
-| **Property Service** | FastAPI (SOAP / XML Mock) | `8102` | `services/property-service/` |
-| **Municipality Service**| FastAPI (REST + API Key) | `8103` | `services/municipality-service/` |
-| **Tax Service** | FastAPI (REST API) | `8104` | `services/tax-service/` |
-| **Database** | Neon Serverless PostgreSQL | Cloud | Configured via `DATABASE_URL` |
-
----
-
-## 3. Environment Configuration (.env)
-
-The root `.env` and `backend/.env` files configure database credentials and service endpoints.
-
-Ensure `backend/.env` exists (copy from `.env.example` if needed):
+The native service URLs must remain:
 
 ```dotenv
-# backend/.env
-APP_NAME=govmesh-backend
-ENVIRONMENT=development
-DATABASE_URL="postgresql://<username>:<password>@<neon-host>/neondb?sslmode=require"
-# Or local PostgreSQL: DATABASE_URL="postgresql://govmesh:govmesh@localhost:5432/govmesh"
-SECRET_KEY=your-secret-key-change-me-in-production
-REDIS_URL=redis://localhost:6379/0
-
-# Department Service URLs
 IDENTITY_URL=http://localhost:8101
-PROPERTY_URL=http://localhost:8102
-MUNICIPALITY_URL=http://localhost:8103
+MUNICIPALITY_URL=http://localhost:8102
+PROPERTY_URL=http://localhost:8103
 TAX_URL=http://localhost:8104
-CORS_ORIGINS=http://localhost:3000,http://localhost:5173
 ```
 
----
+## Native setup
 
-## 4. Step-by-Step Installation
+Create the backend environment and database schema.
 
-### A. Python Virtual Environment & Dependencies
+Windows PowerShell:
 
-From the project root:
-
-#### Windows (PowerShell):
 ```powershell
-# 1. Navigate to backend directory and create virtual environment
 cd backend
-python -m venv venv
-
-# 2. Activate virtual environment
-.\venv\Scripts\Activate.ps1
-
-# 3. Upgrade pip and install core backend dependencies
-python -m pip install --upgrade pip
-pip install -r requirements.txt
+py -3.12 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
+Copy-Item .env.example .env
+# Edit .env, create its PostgreSQL database, then:
+python -m alembic upgrade head
 ```
 
-#### macOS / Linux:
+macOS/Linux:
+
 ```bash
-# 1. Navigate to backend directory and create virtual environment
 cd backend
-python3 -m venv venv
-
-# 2. Activate virtual environment
-source venv/bin/activate
-
-# 3. Upgrade pip and install dependencies
-pip install --upgrade pip
-pip install -r requirements.txt
+python3.12 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+cp .env.example .env
+# Edit .env, create its PostgreSQL database, then:
+python -m alembic upgrade head
 ```
 
-> 💡 **Pro-Tip**: The same virtual environment (`backend/venv`) contains FastAPI, Uvicorn, and httpx, which can be shared across all 4 microservices.
-
----
-
-### B. Database Setup (Neon PostgreSQL)
-
-Run database schema migrations to create all required tables (`service_requests`, `consent_records`, `audit_logs`, `policy_rules`):
-
-```powershell
-# Inside backend/ with venv activated:
-alembic upgrade head
-```
-
-If you ever need to seed initial test data or policies, you can run:
-```powershell
-python -m app.db.init_db
-```
-
----
-
-### C. Frontend Setup (React + Vite)
-
-Open a new terminal and navigate to `frontend/`:
+Install frontend dependencies:
 
 ```bash
 cd frontend
-npm install
+npm ci
 ```
 
----
+## Run natively without Docker
 
-## 5. Starting All Services (Terminal Commands)
+Open six terminals from the project root. Reuse the backend virtual-environment Python for the small simulated services.
 
-To run the entire GovMesh stack locally, open **6 terminal windows** (or use the multi-service launcher script in Section 6):
+Windows PowerShell:
 
-### Terminal 1: Identity Service (Port 8101)
 ```powershell
-# Windows
-cd d:\govmesh\services\identity-service
-..\..\backend\venv\Scripts\python.exe -m uvicorn app:app --reload --port 8101
+# Terminal 1
+cd services\identity-service
+..\..\backend\.venv\Scripts\python.exe -m uvicorn app:app --reload --port 8101
 
-# macOS/Linux
-cd services/identity-service
-../../backend/venv/bin/python -m uvicorn app:app --reload --port 8101
-```
+# Terminal 2
+cd services\municipality-service
+..\..\backend\.venv\Scripts\python.exe -m uvicorn app:app --reload --port 8102
 
-### Terminal 2: Property Service (Port 8102)
-```powershell
-# Windows
-cd d:\govmesh\services\property-service
-..\..\backend\venv\Scripts\python.exe -m uvicorn app:app --reload --port 8102
+# Terminal 3
+cd services\property-service
+..\..\backend\.venv\Scripts\python.exe -m uvicorn app:app --reload --port 8103
 
-# macOS/Linux
-cd services/property-service
-../../backend/venv/bin/python -m uvicorn app:app --reload --port 8102
-```
+# Terminal 4
+cd services\tax-service
+..\..\backend\.venv\Scripts\python.exe -m uvicorn app:app --reload --port 8104
 
-### Terminal 3: Municipality Service (Port 8103)
-```powershell
-# Windows
-cd d:\govmesh\services\municipality-service
-..\..\backend\venv\Scripts\python.exe -m uvicorn app:app --reload --port 8103
-
-# macOS/Linux
-cd services/municipality-service
-../../backend/venv/bin/python -m uvicorn app:app --reload --port 8103
-```
-
-### Terminal 4: Tax Service (Port 8104)
-```powershell
-# Windows
-cd d:\govmesh\services\tax-service
-..\..\backend\venv\Scripts\python.exe -m uvicorn app:app --reload --port 8104
-
-# macOS/Linux
-cd services/tax-service
-../../backend/venv/bin/python -m uvicorn app:app --reload --port 8104
-```
-
-### Terminal 5: Backend Core API Gateway (Port 8000)
-```powershell
-# Windows
-cd d:\govmesh\backend
-.\venv\Scripts\python.exe -m uvicorn app.main:app --reload --port 8000
-
-# macOS/Linux
+# Terminal 5
 cd backend
-source venv/bin/activate
-python -m uvicorn app.main:app --reload --port 8000
-```
+.\.venv\Scripts\python.exe -m uvicorn app.main:app --reload --port 8000
 
-### Terminal 6: Frontend UI (Port 3000)
-```bash
+# Terminal 6
 cd frontend
 npm run dev
 ```
 
----
+On macOS/Linux, replace the Python path with `../../backend/.venv/bin/python` for department services and `.venv/bin/python` for the backend.
 
-## 6. One-Click Startup Scripts
+## Run with Docker Compose
 
-### Windows PowerShell Startup Script (`start_all.ps1`)
-You can run all services with a single PowerShell script:
-
-```powershell
-# Run from project root:
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd services/identity-service; ..\..\backend\venv\Scripts\python.exe -m uvicorn app:app --reload --port 8101"
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd services/property-service; ..\..\backend\venv\Scripts\python.exe -m uvicorn app:app --reload --port 8102"
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd services/municipality-service; ..\..\backend\venv\Scripts\python.exe -m uvicorn app:app --reload --port 8103"
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd services/tax-service; ..\..\backend\venv\Scripts\python.exe -m uvicorn app:app --reload --port 8104"
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd backend; .\venv\Scripts\python.exe -m uvicorn app.main:app --reload --port 8000"
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd frontend; npm run dev"
+```bash
+cp .env.example .env  # PowerShell: Copy-Item .env.example .env
+# Replace POSTGRES_PASSWORD in .env
+docker compose config --quiet
+docker compose up --build
 ```
 
----
+The backend container applies Alembic migrations before starting. Department images include the shared validated seed directory. The frontend dev proxy targets the backend container by service name.
 
-## 7. Verification & Health Checks
+To reset only the Docker demo database, stop the stack and explicitly remove its named volume:
 
-Once all services are running, verify them in your browser or with curl:
-
-| Endpoint | Target URL | Expected Response |
-| :--- | :--- | :--- |
-| **Frontend Portal** | `http://localhost:3000` | GovMesh Modern Dashboard |
-| **Backend Health** | `http://localhost:8000/health` | `{"status": "ok", "database": {"status": "connected"}}` |
-| **Department Health** | `http://localhost:8000/api/v1/systems/monitoring` | Live health for all 4 microservices |
-| **Swagger Docs** | `http://localhost:8000/docs` | Interactive OpenAPI documentation |
-| **Identity Service** | `http://localhost:8101/health` | `{"status": "ok", "service": "identity-service"}` |
-| **Property Service** | `http://localhost:8102/health` | `{"status": "ok", "service": "property-service"}` |
-| **Municipality Service** | `http://localhost:8103/health` | `{"status": "ok", "service": "municipality-service"}` |
-| **Tax Service** | `http://localhost:8104/health` | `{"status": "ok", "service": "tax-service"}` |
-
----
-
-## 8. Troubleshooting & FAQs
-
-### Q1: `uvicorn : The term 'uvicorn' is not recognized`
-**Fix**: Ensure you invoke Python with the full venv path, or activate the venv:
-```powershell
-d:\govmesh\backend\venv\Scripts\python.exe -m uvicorn app.main:app --reload --port 8000
+```bash
+docker compose down -v
 ```
 
-### Q2: `ECONNREFUSED` on port 8000 from frontend
-**Fix**: The backend is not running on port 8000. Start Terminal 5 (Backend Core) before making frontend requests.
+This permanently removes containerized PostgreSQL demo data.
 
-### Q3: `Redis unavailable` in health check
-**Note**: Redis is completely optional in this MVP. GovMesh automatically falls back to in-memory event bus and caching without any loss of functionality.
+## Verification
 
-### Q4: Consent Denied on first request
-**Fix**: Go to the **Consent** page (`http://localhost:3000/consent`), select `CIT-1001` and `business_registration`, and click **"Grant Consent"**.
+| Check | URL / command |
+| --- | --- |
+| Frontend | `http://localhost:3000` |
+| Backend health | `http://localhost:8000/health` |
+| OpenAPI | `http://localhost:8000/docs` |
+| Live department monitoring | `http://localhost:8000/api/v1/systems/monitoring` |
+| Identity health | `http://localhost:8101/health` |
+| Municipality health | `http://localhost:8102/health` |
+| Property health | `http://localhost:8103/health` |
+| Tax health | `http://localhost:8104/health` |
+
+Monitoring reports live reachability and latency. Historical uptime/error-rate values display as “Not measured” because this prototype has no metrics store.
+
+## Tests and build
+
+```bash
+cd backend
+python -m pytest -q
+
+cd ../frontend
+npm test
+npm run build
+```
+
+## Troubleshooting
+
+- Consent denied: grant consent for the same citizen and service type, including exactly that workflow’s required departments.
+- Department offline: verify its corrected port above and check `/health` directly.
+- Database connection failure: confirm PostgreSQL is running, the database exists, and `DATABASE_URL` is correct.
+- Migration failure: run from `backend/` so `alembic.ini` is discoverable.
+- Redis unavailable: expected to be non-blocking in synchronous mode; do not claim event-driven execution until a worker is implemented.
+- Demo schema button unavailable: it is intentionally disabled outside development/demo/test environments.
