@@ -55,5 +55,7 @@ class ServiceRequestListResponse(BaseModel):
     service_type: str
     status: str
     created_at: datetime
+    completed_at: Optional[datetime] = None
+    duration_ms: Optional[int] = None
     workflow_id: Optional[str] = None
     model_config = ConfigDict(from_attributes=True)

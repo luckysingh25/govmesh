@@ -35,10 +35,6 @@ const SystemCard = ({ name, type, icon: Icon, status, uptime, latency, protocol 
         <div className="font-mono text-sm">{latency}</div>
       </div>
     </div>
-    <div className="mt-6 pt-4 border-t border-glass-border flex justify-between items-center">
-      <button className="text-xs text-accent hover:text-accent-hover font-medium">View Logs</button>
-      <button className="text-xs text-accent hover:text-accent-hover font-medium">Configure</button>
-    </div>
   </Card>
 );
 
@@ -84,7 +80,7 @@ export const Systems = () => {
             type={sys.system_type} 
             icon={sys.name.includes("Identity") ? Database : sys.name.includes("Property") ? Server : sys.name.includes("Municipality") ? Globe : Lock} 
             status={sys.status} 
-            uptime={`${sys.uptime_percent}%`} 
+            uptime={sys.uptime_percent == null ? 'Not measured' : `${sys.uptime_percent}%`} 
             latency={`${sys.latency_ms}ms`} 
             protocol={sys.protocol} 
           />
