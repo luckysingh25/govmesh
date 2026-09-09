@@ -2,6 +2,8 @@ from collections.abc import Callable, Mapping, Sequence
 
 from app.connectors.base import ConnectorResult
 from app.intelligence.rules import (
+    cross_system_address_mismatch,
+    cross_system_name_mismatch,
     department_results_unavailable,
     identity_not_verified,
     municipality_registration_missing,
@@ -18,6 +20,8 @@ RULES: tuple[Rule, ...] = (
     property_information_missing,
     municipality_registration_missing,
     tax_clearance_not_confirmed,
+    cross_system_name_mismatch,
+    cross_system_address_mismatch,
     department_results_unavailable,
 )
 
