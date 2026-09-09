@@ -71,4 +71,3 @@ async def get_property_soap(request: Request):
   </GetPropertyDetailsResponse></soap:Body>
 </soap:Envelope>"""
     return Response(content=response_xml, media_type="text/xml")
-

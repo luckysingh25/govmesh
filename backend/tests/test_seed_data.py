@@ -104,4 +104,3 @@ def test_deliberate_scenario_mismatches_are_the_only_inconsistencies():
     assert municipality["CIT-1007"]["address"] != identity["CIT-1007"]["address"]
     for citizen_id in ("CIT-1001", "CIT-1002", "CIT-1004", "CIT-1007", "CIT-1008"):
         assert property_records[citizen_id]["ownerName"] == identity[citizen_id]["full_name"]
-

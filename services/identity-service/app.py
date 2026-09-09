@@ -36,4 +36,3 @@ def get_identity(citizen_id: str, authorization: str | None = Header(None)):
     if record is None:
         raise HTTPException(status_code=404, detail="Citizen not found")
     return record
-

@@ -136,4 +136,3 @@ async def test_tax_pending_is_explicit_and_has_no_invented_result():
     await connector.close()
     assert result.status == "pending"
     assert result.data == {"tax_status": "PENDING"}
-

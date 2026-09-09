@@ -150,4 +150,3 @@ def test_repeated_active_consent_is_updated_not_duplicated(client, session_facto
     second = client.post("/api/v1/consent", json={**payload, "ttl_hours": 48})
     assert first.status_code == second.status_code == 201
     assert first.json()["id"] == second.json()["id"]
-

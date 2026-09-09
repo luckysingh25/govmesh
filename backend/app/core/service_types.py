@@ -30,4 +30,3 @@ WORKFLOW_DEFINITIONS = {
 def required_departments(service_type: str | ServiceType) -> tuple[str, ...]:
     value = service_type.value if isinstance(service_type, ServiceType) else service_type
     return tuple(WORKFLOW_DEFINITIONS[value]["steps"])
-

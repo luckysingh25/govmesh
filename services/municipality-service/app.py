@@ -39,4 +39,3 @@ def get_municipality(citizen_id: str, x_api_key: str | None = Header(None)):
     if record is None:
         raise HTTPException(status_code=404, detail="Resident not found")
     return record
-

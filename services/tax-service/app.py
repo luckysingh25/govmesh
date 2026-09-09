@@ -57,4 +57,3 @@ def get_tax_lookup(job_id: str):
     if record.taxStatus == "PENDING":
         return {"job_id": job_id, "status": "pending", "result": None}
     return {"job_id": job_id, "status": "completed", "result": record}
-

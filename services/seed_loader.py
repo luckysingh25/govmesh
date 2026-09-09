@@ -37,4 +37,3 @@ def load_seed_records(
             raise RuntimeError(f"Duplicate {id_field} {record_id!r} in {path.name}")
         records[record_id] = record
     return records
-

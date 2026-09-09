@@ -80,7 +80,7 @@ export const Systems = () => {
             type={sys.system_type} 
             icon={sys.name.includes("Identity") ? Database : sys.name.includes("Property") ? Server : sys.name.includes("Municipality") ? Globe : Lock} 
             status={sys.status} 
-            uptime={sys.uptime_percent == null ? 'Not measured' : `${sys.uptime_percent}%`} 
+            uptime={sys.uptime_percent == null ? 'Not measured' : `${sys.uptime_percent}%`}
             latency={`${sys.latency_ms}ms`} 
             protocol={sys.protocol} 
           />
