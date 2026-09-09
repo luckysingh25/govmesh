@@ -63,7 +63,7 @@ const AdvisoryInsights = ({ insights = [] }) => (
       </ul>
     )}
 
-    <p className="advisory-disclaimer">Advisory only. These insights do not make eligibility or approval decisions.</p>
+    <p className="advisory-disclaimer">Advisory only — verify with the responsible department before taking action.</p>
   </section>
 );
 

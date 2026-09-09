@@ -30,7 +30,7 @@ describe('ResultsView', () => {
 
     expect(screen.getByText('CROSS_SYSTEM_NAME_MISMATCH')).toBeInTheDocument();
     expect(screen.getByText('TAX_CLEARANCE_NOT_CONFIRMED')).toBeInTheDocument();
-    expect(screen.getByText(/Advisory only/)).toBeInTheDocument();
+    expect(screen.getByText('Advisory only — verify with the responsible department before taking action.')).toBeInTheDocument();
   });
 
   it('renders a healthy empty state', () => {
