@@ -26,7 +26,7 @@ class PolicyService:
         self._audit = AuditService()
 
     def evaluate(
-        self, db: Session, citizen_id: str, service_type: str, correlation_id: str
+        self, db: Session, citizen_id: str, service_type: str, correlation_id: str, commit: bool = True
     ) -> PolicyResult:
         consent = self._consent.get_active(db, citizen_id, service_type)
 
@@ -63,10 +63,11 @@ class PolicyService:
             target=citizen_id,
             detail=result.reason,
             outcome=result.decision,
-            correlation_id=correlation_id
+            correlation_id=correlation_id,
+            commit=commit,
         )
-        
-        db.commit()
+        if commit:
+            db.commit()
 
         logger.info(
             "policy_evaluated citizen_id=%s decision=%s reason=%s correlation_id=%s",

@@ -9,7 +9,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from app.core.config import settings
-from app.db.session import Base
+from app.db.session import Base, _get_connect_args
 from app.models.service_request import ServiceRequest
 from app.models.consent import CitizenConsent
 from app.models.policy_decision import PolicyDecision
@@ -46,6 +46,7 @@ def run_migrations_online() -> None:
         config.get_section(config.config_ini_section, {}),
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
+        connect_args=_get_connect_args(unpooled_url),
     )
     with connectable.connect() as connection:
         context.configure(

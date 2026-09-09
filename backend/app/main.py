@@ -16,6 +16,10 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s %(levelname)s %(name)s %(message)s",
 )
+logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("httpcore").setLevel(logging.WARNING)
+
 logger = logging.getLogger("govmesh.request")
 
 app = FastAPI(
@@ -80,17 +84,22 @@ app.include_router(intelligence.router, prefix="/api/v1/intelligence", tags=["in
 
 
 @app.on_event("startup")
-def startup_seed():
-    """Seed workflow definitions on application startup."""
+async def startup_seed():
+    """Seed workflow definitions asynchronously in background on application startup."""
+    import asyncio
     from app.db.session import SessionLocal
     from app.db.seed_workflows import seed_workflow_definitions
-    try:
-        db = SessionLocal()
-        seed_workflow_definitions(db)
-    except Exception as exc:
-        logger.warning("workflow_seed_failed error=%s", exc)
-    finally:
-        db.close()
+
+    def _seed():
+        try:
+            db = SessionLocal()
+            seed_workflow_definitions(db)
+        except Exception as exc:
+            logger.warning("workflow_seed_failed error=%s", exc)
+        finally:
+            db.close()
+
+    asyncio.create_task(asyncio.to_thread(_seed))
 
 @app.get("/health")
 def health():

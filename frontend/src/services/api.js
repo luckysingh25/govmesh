@@ -181,20 +181,26 @@ export const fetchSchemas = async () => {
   return response.json();
 };
 
-export const fetchSuggestions = async () => {
-  const response = await fetch(`${API_BASE_URL}/intelligence/suggestions`);
+export const fetchSuggestions = async (status = 'pending') => {
+  const response = await fetch(`${API_BASE_URL}/intelligence/suggestions?status=${status}`);
   if (!response.ok) throw new Error('Failed to fetch suggestions.');
   return response.json();
 };
 
 export const approveSuggestion = async (suggestionId) => {
-  const response = await fetch(`${API_BASE_URL}/intelligence/suggestions/${suggestionId}/approve`, { method: 'POST' });
+  const response = await fetch(`${API_BASE_URL}/intelligence/suggestions/${suggestionId}/approve`, {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer demo-admin-token' }
+  });
   if (!response.ok) throw new Error('Failed to approve suggestion.');
   return response.json();
 };
 
 export const rejectSuggestion = async (suggestionId) => {
-  const response = await fetch(`${API_BASE_URL}/intelligence/suggestions/${suggestionId}/reject`, { method: 'POST' });
+  const response = await fetch(`${API_BASE_URL}/intelligence/suggestions/${suggestionId}/reject`, {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer demo-admin-token' }
+  });
   if (!response.ok) throw new Error('Failed to reject suggestion.');
   return response.json();
 };

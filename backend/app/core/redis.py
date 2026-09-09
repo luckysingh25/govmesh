@@ -3,7 +3,12 @@ from app.core.config import settings
 
 def get_redis_client():
     """Create a Redis client instance from application settings."""
-    return redis.from_url(settings.redis_url, decode_responses=True)
+    return redis.from_url(
+        settings.redis_url,
+        decode_responses=True,
+        socket_connect_timeout=0.5,
+        socket_timeout=0.5,
+    )
 
 def check_redis_connection() -> bool:
     """Return True if Redis is reachable, False otherwise."""

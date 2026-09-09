@@ -15,7 +15,8 @@ class AuditService:
         target: str,
         detail: str,
         outcome: str,
-        correlation_id: str | None = None
+        correlation_id: str | None = None,
+        commit: bool = True,
     ) -> AuditLog:
         record = AuditLog(
             correlation_id=correlation_id,
@@ -26,7 +27,8 @@ class AuditService:
             outcome=outcome,
         )
         db.add(record)
-        db.commit()
+        if commit:
+            db.commit()
         logger.info(f"audit_event: {event_type} | {actor} -> {target} | {outcome} | {detail}")
         return record
 
