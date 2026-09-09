@@ -1,53 +1,60 @@
+from pathlib import Path
+import sys
+from typing import Literal
+
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
+SERVICES_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(SERVICES_ROOT))
+from seed_loader import load_seed_records  # noqa: E402
+
 app = FastAPI(title="Tax Service (Simulated)")
 
+
 class TaxData(BaseModel):
+    citizenId: str
     taxpayerName: str
     taxId: str
-    taxStatus: str
+    taxStatus: Literal["CLEARED", "DUE", "PENDING"]
     outstandingAmount: float
+    assessmentYear: str
 
-MOCK_DB = {
-    "CIT-1001": TaxData(
-        taxpayerName="Rajesh Kumar",
-        taxId="PAN-AXXXX1234Z",
-        taxStatus="CLEARED",
-        outstandingAmount=0.0
-    ),
-    "CIT-1002": TaxData(
-        taxpayerName="Priya Sharma",
-        taxId="PAN-BXXXX5678Y",
-        taxStatus="DUE",
-        outstandingAmount=14500.50
-    )
-}
+
+RECORDS = load_seed_records(
+    SERVICES_ROOT / "seed" / "tax.json", TaxData, id_field="citizenId"
+)
+
 
 @app.get("/health")
 def health():
     return {"status": "ok", "service": "tax"}
 
-@app.get("/api/tax/{citizen_id}")
+
+@app.get("/api/tax/{citizen_id}", response_model=TaxData)
 def get_tax(citizen_id: str):
-    if citizen_id not in MOCK_DB:
+    record = RECORDS.get(citizen_id.upper())
+    if record is None:
         raise HTTPException(status_code=404, detail="Taxpayer not found")
-        
-    return MOCK_DB[citizen_id]
+    return record
 
 
-# A deliberately small legacy/asynchronous-style facade: the consumer submits a
-# lookup and then reads the completed job. Jobs are deterministic for the demo.
 @app.post("/api/tax/requests/{citizen_id}")
 def submit_tax_lookup(citizen_id: str):
-    if citizen_id not in MOCK_DB:
+    record = RECORDS.get(citizen_id.upper())
+    if record is None:
         raise HTTPException(status_code=404, detail="Taxpayer not found")
-    return {"job_id": f"TAX-JOB-{citizen_id}", "status": "completed"}
+    state = "pending" if record.taxStatus == "PENDING" else "completed"
+    return {"job_id": f"TAX-JOB-{record.citizenId}", "status": state}
 
 
 @app.get("/api/tax/requests/{job_id}")
 def get_tax_lookup(job_id: str):
-    citizen_id = job_id.removeprefix("TAX-JOB-")
-    if citizen_id not in MOCK_DB:
+    citizen_id = job_id.removeprefix("TAX-JOB-").upper()
+    record = RECORDS.get(citizen_id)
+    if record is None or job_id != f"TAX-JOB-{citizen_id}":
         raise HTTPException(status_code=404, detail="Tax lookup not found")
-    return {"job_id": job_id, "status": "completed", "result": MOCK_DB[citizen_id]}
+    if record.taxStatus == "PENDING":
+        return {"job_id": job_id, "status": "pending", "result": None}
+    return {"job_id": job_id, "status": "completed", "result": record}
+

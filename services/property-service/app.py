@@ -1,62 +1,74 @@
-from fastapi import FastAPI, Request, Response
+from pathlib import Path
+import sys
+import xml.etree.ElementTree as ET
+from typing import Literal
 from xml.sax.saxutils import escape
+
+from fastapi import FastAPI, Request, Response
+from pydantic import BaseModel
+
+SERVICES_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(SERVICES_ROOT))
+from seed_loader import load_seed_records  # noqa: E402
 
 app = FastAPI(title="Property Service (Simulated SOAP)")
 
-MOCK_DB = {
-    "CIT-1001": {
-        "ownerName": "Rajesh Kumar",
-        "propertyId": "PROP-BLR-8832",
-        "propertyAddress": "123 MG Road, Bangalore",
-        "propertyType": "Commercial"
-    },
-    "CIT-1002": {
-        "ownerName": "Priya Sharma",
-        "propertyId": "PROP-CCU-9921",
-        "propertyAddress": "456 Park Street, Kolkata",
-        "propertyType": "Residential"
-    }
-}
+
+class PropertyData(BaseModel):
+    citizenId: str
+    ownerName: str
+    propertyId: str
+    propertyAddress: str
+    propertyType: str
+    ownershipStatus: Literal["ACTIVE", "INACTIVE"]
+
+
+RECORDS = load_seed_records(
+    SERVICES_ROOT / "seed" / "property.json", PropertyData, id_field="citizenId"
+)
+
+
+def soap_fault(message: str, status_code: int) -> Response:
+    body = f"""<?xml version="1.0" encoding="utf-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+  <soap:Body><soap:Fault><faultcode>soap:Client</faultcode>
+  <faultstring>{escape(message)}</faultstring></soap:Fault></soap:Body>
+</soap:Envelope>"""
+    return Response(content=body, media_type="text/xml", status_code=status_code)
+
 
 @app.get("/health")
 def health():
     return {"status": "ok", "service": "property-soap"}
 
+
 @app.post("/soap/property")
 async def get_property_soap(request: Request):
-    body = await request.body()
-    body_str = body.decode('utf-8')
-    
-    # Very naive XML extraction for simulation purposes
-    citizen_id = None
-    if "<citizenId>" in body_str:
-        citizen_id = body_str.split("<citizenId>")[1].split("</citizenId>")[0]
-        
-    if not citizen_id or citizen_id not in MOCK_DB:
-        # Return SOAP fault
-        fault = f"""<?xml version="1.0" encoding="utf-8"?>
-        <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
-          <soap:Body>
-            <soap:Fault>
-              <faultcode>soap:Client</faultcode>
-              <faultstring>Citizen ID not found or missing</faultstring>
-            </soap:Fault>
-          </soap:Body>
-        </soap:Envelope>"""
-        return Response(content=fault, media_type="text/xml", status_code=500)
-        
-    data = MOCK_DB[citizen_id]
-    
+    try:
+        root = ET.fromstring(await request.body())
+    except ET.ParseError:
+        return soap_fault("Invalid SOAP XML", 400)
+
+    citizen_id = next(
+        ((node.text or "").strip().upper() for node in root.iter()
+         if node.tag.split("}")[-1] == "citizenId"),
+        "",
+    )
+    record = RECORDS.get(citizen_id)
+    if record is None:
+        return soap_fault("Property record not found", 404)
+
+    data = record.model_dump()
     response_xml = f"""<?xml version="1.0" encoding="utf-8"?>
-    <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
-      <soap:Body>
-        <GetPropertyDetailsResponse>
-          <ownerName>{escape(data["ownerName"])}</ownerName>
-          <propertyId>{escape(data["propertyId"])}</propertyId>
-          <propertyAddress>{escape(data["propertyAddress"])}</propertyAddress>
-          <propertyType>{escape(data["propertyType"])}</propertyType>
-        </GetPropertyDetailsResponse>
-      </soap:Body>
-    </soap:Envelope>"""
-    
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+  <soap:Body><GetPropertyDetailsResponse>
+    <citizenId>{escape(data['citizenId'])}</citizenId>
+    <ownerName>{escape(data['ownerName'])}</ownerName>
+    <propertyId>{escape(data['propertyId'])}</propertyId>
+    <propertyAddress>{escape(data['propertyAddress'])}</propertyAddress>
+    <propertyType>{escape(data['propertyType'])}</propertyType>
+    <ownershipStatus>{escape(data['ownershipStatus'])}</ownershipStatus>
+  </GetPropertyDetailsResponse></soap:Body>
+</soap:Envelope>"""
     return Response(content=response_xml, media_type="text/xml")
+

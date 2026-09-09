@@ -1,0 +1,9 @@
+[
+  {"citizen_id":"CIT-1001","resident_name":"Asha Verma","municipal_id":"DEMO-MUN-1001","ward":"Demo Ward 11","address":"101 Example Avenue, Demo District","registration_status":"ACTIVE"},
+  {"citizen_id":"CIT-1002","resident_name":"Nila Rao","municipal_id":"DEMO-MUN-1002","ward":"Demo Ward 12","address":"202 Sample Street, Demo District","registration_status":"ACTIVE"},
+  {"citizen_id":"CIT-1003","resident_name":"Omar Das","municipal_id":"DEMO-MUN-1003","ward":"Demo Ward 13","address":"303 Prototype Park, Demo District","registration_status":"ACTIVE"},
+  {"citizen_id":"CIT-1005","resident_name":"Ishan Kapoor","municipal_id":"DEMO-MUN-1005","ward":"Demo Ward 15","address":"505 Fixture Close, Demo District","registration_status":"ACTIVE"},
+  {"citizen_id":"CIT-1006","resident_name":"Kabir Jain","municipal_id":"DEMO-MUN-1006","ward":"Demo Ward 16","address":"606 Test Garden, Demo District","registration_status":"ACTIVE"},
+  {"citizen_id":"CIT-1007","resident_name":"Mira Bose","municipal_id":"DEMO-MUN-1007","ward":"Demo Ward 17","address":"77 Conflict Road, Demo District","registration_status":"ACTIVE"},
+  {"citizen_id":"CIT-1008","resident_name":"Tara Mehta","municipal_id":"DEMO-MUN-1008","ward":"Demo Ward 18","address":"808 Queue Terrace, Demo District","registration_status":"ACTIVE"}
+]
