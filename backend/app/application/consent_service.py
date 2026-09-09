@@ -25,14 +25,30 @@ class ConsentService:
         ttl_hours: int = 24,
     ) -> CitizenConsent:
         now = datetime.now(timezone.utc)
-        consent = CitizenConsent(
-            citizen_id=citizen_id,
-            service_type=service_type,
-            departments=departments,
-            granted_at=now,
-            expires_at=now + timedelta(hours=ttl_hours),
+        consent = (
+            db.query(CitizenConsent)
+            .filter(
+                CitizenConsent.citizen_id == citizen_id,
+                CitizenConsent.service_type == service_type,
+                CitizenConsent.revoked_at.is_(None),
+                CitizenConsent.expires_at > now,
+            )
+            .order_by(CitizenConsent.granted_at.desc())
+            .first()
         )
-        db.add(consent)
+        if consent is None:
+            consent = CitizenConsent(
+                citizen_id=citizen_id,
+                service_type=service_type,
+                departments=departments,
+                granted_at=now,
+                expires_at=now + timedelta(hours=ttl_hours),
+            )
+            db.add(consent)
+        else:
+            consent.departments = departments
+            consent.granted_at = now
+            consent.expires_at = now + timedelta(hours=ttl_hours)
         db.commit()
         db.refresh(consent)
         

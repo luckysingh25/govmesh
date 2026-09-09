@@ -12,7 +12,8 @@ from app.connectors.identity import IdentityConnector
 from app.connectors.municipality import MunicipalityConnector
 from app.connectors.property import PropertyConnector
 from app.connectors.tax import TaxConnector
-from app.core.event_bus import redis_available
+from app.core.config import settings
+from app.core.service_types import KNOWN_DEPARTMENTS
 from app.intelligence import generate_insights
 from app.models.service_request import ServiceRequest
 from app.models.workflow import WorkflowInstance
@@ -139,28 +140,29 @@ class ServiceRequestService:
             db=db,
             service_request_id=request_id,
             citizen_id=citizen_id,
-            definition_name="business_registration",
+            definition_name=service_type,
         )
         workflow_id = workflow_instance.workflow_id
 
-        # If Redis is available, the workflow runs asynchronously via workers.
-        # Otherwise fall back to synchronous execution.
-        if not redis_available():
-            await self._workflow_engine.execute_workflow_sync(db, workflow_instance.id)
-            db.refresh(workflow_instance)
+        # Synchronous execution is the explicit, reliable prototype default.
+        if settings.workflow_execution_mode != "sync":
+            raise RuntimeError("Unsupported workflow execution mode")
+        await self._workflow_engine.execute_workflow_sync(db, workflow_instance.id)
+        db.refresh(workflow_instance)
 
         # Build response from workflow step results
         db.refresh(record)
         dept_results = self._build_dept_responses(workflow_instance)
-        insights = generate_insights([
-            ConnectorResult(
-                step.step_name,
-                step.status,
-                step.result_data or {},
-                step.error_message,
-            )
-            for step in workflow_instance.steps
-        ])
+        insight_results = []
+        for department in KNOWN_DEPARTMENTS:
+            response = self._step_to_dept(department, workflow_instance)
+            insight_results.append(ConnectorResult(
+                department,
+                response.status,
+                response.data or {},
+                response.error,
+            ))
+        insights = generate_insights(insight_results)
 
         logger.info(
             "service_request_completed",
@@ -235,4 +237,4 @@ class ServiceRequestService:
                     data=step.result_data if step.result_data else None,
                     error=step.error_message,
                 )
-        return DepartmentResponse(status="pending", data=None, error=None)
+        return DepartmentResponse(status="not_required", data=None, error=None)

@@ -76,10 +76,6 @@ async def successful_departments(_self, db, citizen_id, request_id):
 
 def test_create_request_returns_unified_response_and_correlation_id(monkeypatch):
     app.dependency_overrides[get_db] = override_db
-    # Patch redis_available to force sync execution
-    monkeypatch.setattr("app.application.workflow_engine.redis_available", lambda: False)
-    monkeypatch.setattr("app.application.service_request_service.redis_available", lambda: False)
-
     # Mock all connectors to succeed via CONNECTOR_MAP
     from unittest.mock import MagicMock, AsyncMock
     mock_results = {
@@ -152,9 +148,6 @@ def test_create_request_includes_post_aggregation_insights(monkeypatch):
     from unittest.mock import AsyncMock, MagicMock
 
     app.dependency_overrides[get_db] = override_db
-    monkeypatch.setattr("app.application.workflow_engine.redis_available", lambda: False)
-    monkeypatch.setattr("app.application.service_request_service.redis_available", lambda: False)
-
     results_by_department = {
         result.department: result for result in successful_results(tax_status="DUE")
     }
@@ -169,13 +162,13 @@ def test_create_request_includes_post_aggregation_insights(monkeypatch):
 
     client = TestClient(app)
     client.post("/api/v1/consent", json={
-        "citizen_id": "CIT-INTELLIGENCE",
+        "citizen_id": "CIT-9001",
         "service_type": "business_registration",
         "departments": ["identity", "property", "municipality", "tax"],
     })
 
     response = client.post("/api/v1/service-requests", json={
-        "citizen_id": "CIT-INTELLIGENCE",
+        "citizen_id": "CIT-9001",
         "service_type": "business_registration",
     })
 

@@ -134,7 +134,7 @@ def test_service_request_denied_without_consent(monkeypatch):
     client = TestClient(app)
 
     resp = client.post("/api/v1/service-requests", json={
-        "citizen_id": "CIT-NOCONSENT",
+        "citizen_id": "CIT-9002",
         "service_type": "business_registration",
     })
     assert resp.status_code == 200
@@ -150,9 +150,6 @@ def test_service_request_denied_without_consent(monkeypatch):
 def test_service_request_allowed_with_consent(monkeypatch):
     """After granting consent, the request should proceed normally."""
     app.dependency_overrides[get_db] = override_db
-    monkeypatch.setattr("app.application.workflow_engine.redis_available", lambda: False)
-    monkeypatch.setattr("app.application.service_request_service.redis_available", lambda: False)
-
     # Mock all connectors to succeed via CONNECTOR_MAP
     from unittest.mock import MagicMock, AsyncMock
     from app.connectors.base import ConnectorResult

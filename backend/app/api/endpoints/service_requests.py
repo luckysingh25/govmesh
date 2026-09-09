@@ -38,6 +38,6 @@ async def create_service_request(
     return await ServiceRequestService().create(
         db=db,
         citizen_id=payload.citizen_id,
-        service_type=payload.service_type,
+        service_type=payload.service_type.value,
         correlation_id=request.state.correlation_id,
     )

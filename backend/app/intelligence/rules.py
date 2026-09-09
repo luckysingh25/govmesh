@@ -86,7 +86,8 @@ def department_results_unavailable(
     unavailable = [
         department
         for department in DEPARTMENTS
-        if department not in results or results[department].status != "success"
+        if department not in results
+        or results[department].status not in {"success", "not_required"}
     ]
     if not unavailable:
         return None

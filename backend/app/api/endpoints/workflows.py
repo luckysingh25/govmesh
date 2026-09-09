@@ -40,8 +40,10 @@ async def start_workflow(payload: WorkflowStartRequest, db: Session = Depends(ge
         db=db,
         service_request_id=sr.request_id,
         citizen_id=sr.citizen_id,
-        definition_name="business_registration",
+        definition_name=sr.service_type,
     )
+    await _engine.execute_workflow_sync(db, instance.id)
+    db.refresh(instance)
 
     return _build_status_response(db, instance)
 

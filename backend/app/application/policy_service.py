@@ -5,12 +5,10 @@ from sqlalchemy.orm import Session
 
 from app.application.consent_service import ConsentService
 from app.application.audit_service import AuditService
+from app.core.service_types import required_departments
 from app.models.policy_decision import PolicyDecision
 
 logger = logging.getLogger(__name__)
-
-REQUIRED_DEPARTMENTS = {"identity", "property", "municipality", "tax"}
-
 
 @dataclass
 class PolicyResult:
@@ -36,7 +34,8 @@ class PolicyService:
             result = PolicyResult("deny", "No active consent for this citizen and service type")
         else:
             consented = set(consent.departments)
-            missing = REQUIRED_DEPARTMENTS - consented
+            required = set(required_departments(service_type))
+            missing = required - consented
             if missing:
                 result = PolicyResult(
                     "deny",

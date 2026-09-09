@@ -18,7 +18,7 @@ from app.connectors.identity import IdentityConnector
 from app.connectors.municipality import MunicipalityConnector
 from app.connectors.property import PropertyConnector
 from app.connectors.tax import TaxConnector
-from app.core.event_bus import publish_step_event, publish_retry_event, redis_available
+from app.core.config import settings
 from app.models.service_request import ServiceRequest
 from app.models.workflow import WorkflowDefinition, WorkflowInstance, WorkflowStepInstance
 
@@ -52,10 +52,11 @@ class WorkflowEngine:
     ) -> WorkflowInstance:
         """Create a WorkflowInstance (and its steps) from a definition template.
 
-        If Redis is available the first step is published to the event stream
-        for async processing.  Otherwise the caller should fall back to
-        `execute_workflow_sync`.
+        GovMesh currently supports reliable synchronous execution. The caller
+        invokes `execute_workflow_sync` after this method creates the steps.
         """
+        if settings.workflow_execution_mode != "sync":
+            raise RuntimeError("Only synchronous workflow execution is currently supported")
         defn = (
             db.query(WorkflowDefinition)
             .filter_by(name=definition_name)
@@ -93,16 +94,11 @@ class WorkflowEngine:
             instance.workflow_id, service_request_id, defn.steps,
         )
 
-        # Try to kick off the first step via Redis
-        first_step = instance.steps[0]
-        if redis_available():
-            instance.status = "running"
-            db.commit()
-            publish_step_event(first_step.id, action="execute")
-
         return instance
 
-    async def execute_step(self, db: Session, step_instance_id: int) -> None:
+    async def execute_step(
+        self, db: Session, step_instance_id: int, *, allow_retry: bool = True
+    ) -> None:
         """Execute a single workflow step (connector call) and handle the result."""
         step = db.get(WorkflowStepInstance, step_instance_id)
         if step is None:
@@ -141,7 +137,7 @@ class WorkflowEngine:
         finally:
             await connector.close()
 
-        self._handle_step_result(db, step, workflow, result)
+        self._handle_step_result(db, step, workflow, result, allow_retry=allow_retry)
 
     # ── Synchronous fallback (no Redis) ────────────────────────────────
 
@@ -155,7 +151,7 @@ class WorkflowEngine:
         db.commit()
 
         for step in workflow.steps:
-            await self.execute_step(db, step.id)
+            await self.execute_step(db, step.id, allow_retry=False)
 
             # If step failed and exhausted retries, continue to next step
             # (graceful degradation — don't block the whole workflow)
@@ -192,8 +188,6 @@ class WorkflowEngine:
             step.id, step.attempt_count + 1, delay, next_retry.isoformat(),
         )
 
-        # Publish to Redis retry stream (best-effort)
-        publish_retry_event(step.id, next_retry.isoformat())
         return True
 
     # ── Internal helpers ───────────────────────────────────────────────
@@ -204,6 +198,8 @@ class WorkflowEngine:
         step: WorkflowStepInstance,
         workflow: WorkflowInstance,
         result: ConnectorResult,
+        *,
+        allow_retry: bool,
     ) -> None:
         """Process the connector result — update step, decide retry or advance."""
         step.completed_at = datetime.now(timezone.utc)
@@ -215,13 +211,13 @@ class WorkflowEngine:
             db.commit()
             self._advance_or_finish(db, workflow)
         else:
-            step.status = "failed"
+            step.status = result.status
             step.error_message = result.error or "Unknown error"
             step.result_data = result.data if result.data else None
             db.commit()
 
             # Attempt retry
-            if not self.retry_step(db, step.id):
+            if not allow_retry or not self.retry_step(db, step.id):
                 # Retries exhausted — move on to next step (graceful degradation)
                 self._advance_or_finish(db, workflow)
 
@@ -236,10 +232,6 @@ class WorkflowEngine:
             workflow.current_step_index = next_idx
             db.commit()
 
-            next_step = steps[next_idx]
-            # Publish to Redis or the caller will handle sync execution
-            if redis_available():
-                publish_step_event(next_step.id, action="execute")
         else:
             # All steps processed — compute overall status
             self._finalize_workflow(db, workflow, steps)
