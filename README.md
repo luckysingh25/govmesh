@@ -134,3 +134,11 @@ curl -X POST http://localhost:8000/api/v1/service-requests \
 }
 ```
 *(Responses contain unified data from Property, Municipality, and Tax modules alongside the identity chunk)*
+
+## Interoperability intelligence
+
+After all department connector responses are normalized and aggregated, the backend runs a small deterministic rule engine and returns advisory findings in the response's `insights` list. Current rules flag incomplete identity data, missing property information, missing municipality registration, unconfirmed tax clearance, and unavailable department results.
+
+Each insight contains a stable `rule_id`, a severity, and a concise explanation. `info` indicates a result that may still be pending; `warning` identifies missing, failed, or non-clear data that needs review. The engine does not call department systems, inspect raw protocol payloads, or make legal, fraud, eligibility, or final government decisions.
+
+To add a rule, define a side-effect-free function in `backend/app/intelligence/rules.py` that reads normalized `ConnectorResult` values, then add it to the ordered `RULES` tuple in `engine.py` and cover it with focused tests.

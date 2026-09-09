@@ -13,6 +13,7 @@ from app.connectors.municipality import MunicipalityConnector
 from app.connectors.property import PropertyConnector
 from app.connectors.tax import TaxConnector
 from app.core.event_bus import redis_available
+from app.intelligence import generate_insights
 from app.models.service_request import ServiceRequest
 from app.models.workflow import WorkflowInstance
 from app.schemas.service_request import CitizenInfo, DepartmentResponse, ServiceRequestResponse
@@ -151,6 +152,15 @@ class ServiceRequestService:
         # Build response from workflow step results
         db.refresh(record)
         dept_results = self._build_dept_responses(workflow_instance)
+        insights = generate_insights([
+            ConnectorResult(
+                step.step_name,
+                step.status,
+                step.result_data or {},
+                step.error_message,
+            )
+            for step in workflow_instance.steps
+        ])
 
         logger.info(
             "service_request_completed",
@@ -160,17 +170,17 @@ class ServiceRequestService:
         # Record data lineage for name and address mappings
         citizen_name = "Unknown"
         citizen_address = "Unknown"
-        
+
         identity_data = dept_results.get("identity", {})
         municipality_data = dept_results.get("municipality", {})
-        
+
         if identity_data.get("full_name"):
             citizen_name = identity_data["full_name"]
             self._data_lineage.record_lineage(db, correlation_id, "Identity DB", "full_name", "GovMesh Response", "citizen.name", "exact match", request_id)
         elif municipality_data.get("resident_name"):
             citizen_name = municipality_data["resident_name"]
             self._data_lineage.record_lineage(db, correlation_id, "Municipality Records", "resident_name", "GovMesh Response", "citizen.name", "fallback map", request_id)
-            
+
         if identity_data.get("address"):
             citizen_address = identity_data["address"]
             self._data_lineage.record_lineage(db, correlation_id, "Identity DB", "address", "GovMesh Response", "citizen.address", "exact match", request_id)
@@ -203,6 +213,7 @@ class ServiceRequestService:
             overall_status=record.status,
             consent_id=policy.consent_id,
             policy_decision="Consent verified — access allowed",
+            insights=insights,
             workflow_id=workflow_id,
         )
 
