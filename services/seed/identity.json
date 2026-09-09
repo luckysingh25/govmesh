@@ -1,0 +1,9 @@
+[
+  {"citizen_id":"CIT-1001","full_name":"Asha Verma","date_of_birth":"1988-04-12","address":"101 Example Avenue, Demo District","verification_status":"VERIFIED"},
+  {"citizen_id":"CIT-1002","full_name":"Nila Rao","date_of_birth":"1991-09-23","address":"202 Sample Street, Demo District","verification_status":"VERIFIED"},
+  {"citizen_id":"CIT-1003","full_name":"Omar Das","date_of_birth":"1985-02-08","address":"303 Prototype Park, Demo District","verification_status":"VERIFIED"},
+  {"citizen_id":"CIT-1004","full_name":"Leela Sen","date_of_birth":"1993-07-17","address":"404 Sandbox Road, Demo District","verification_status":"VERIFIED"},
+  {"citizen_id":"CIT-1006","full_name":"Kabir Jain","date_of_birth":"1987-12-03","address":"606 Test Garden, Demo District","verification_status":"VERIFIED"},
+  {"citizen_id":"CIT-1007","full_name":"Mira Bose","date_of_birth":"1995-05-29","address":"707 Harmony Lane, Demo District","verification_status":"VERIFIED"},
+  {"citizen_id":"CIT-1008","full_name":"Tara Mehta","date_of_birth":"1990-01-14","address":"808 Queue Terrace, Demo District","verification_status":"VERIFIED"}
+]

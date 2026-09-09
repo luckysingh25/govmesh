@@ -14,6 +14,7 @@ from unittest.mock import AsyncMock, patch, MagicMock
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
 
 from app.db.session import Base
 from app.models.service_request import ServiceRequest
@@ -23,8 +24,12 @@ from app.application.workflow_engine import WorkflowEngine
 
 # ── Shared test fixtures ──────────────────────────────────────────────
 
-TEST_DB_URL = "sqlite:///./test_workflow.db"
-engine = create_engine(TEST_DB_URL, connect_args={"check_same_thread": False})
+TEST_DB_URL = "sqlite://"
+engine = create_engine(
+    TEST_DB_URL,
+    connect_args={"check_same_thread": False},
+    poolclass=StaticPool,
+)
 TestSession = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
@@ -85,8 +90,7 @@ def _failed_result(dept: str) -> ConnectorResult:
 # ── Test 1: All connectors succeed ────────────────────────────────────
 
 @pytest.mark.asyncio
-@patch("app.application.workflow_engine.redis_available", return_value=False)
-async def test_workflow_success(mock_redis, db, seed_definition, seed_service_request):
+async def test_workflow_success(db, seed_definition, seed_service_request):
     """When all 4 department connectors succeed, the workflow should be 'success'."""
     engine_instance = WorkflowEngine()
 
@@ -135,9 +139,7 @@ async def test_workflow_success(mock_redis, db, seed_definition, seed_service_re
 # ── Test 2: One connector fails ───────────────────────────────────────
 
 @pytest.mark.asyncio
-@patch("app.application.workflow_engine.redis_available", return_value=False)
-@patch("app.application.workflow_engine.publish_retry_event", return_value=False)
-async def test_workflow_department_failure(mock_retry_pub, mock_redis, db, seed_definition, seed_service_request):
+async def test_workflow_department_failure(db, seed_definition, seed_service_request):
     """When one department fails (retries exhausted), the workflow should be 'partially_completed'."""
     engine_instance = WorkflowEngine()
     wf = engine_instance.start_workflow(db, "REQ-TEST0001", "CIT-1001")
@@ -187,9 +189,7 @@ async def test_workflow_department_failure(mock_retry_pub, mock_redis, db, seed_
 # ── Test 3: Retry behaviour ──────────────────────────────────────────
 
 @pytest.mark.asyncio
-@patch("app.application.workflow_engine.redis_available", return_value=False)
-@patch("app.application.workflow_engine.publish_retry_event", return_value=False)
-async def test_workflow_retry(mock_retry_pub, mock_redis, db, seed_definition, seed_service_request):
+async def test_workflow_retry(db, seed_definition, seed_service_request):
     """A step that fails should be retried and eventually succeed."""
     engine_instance = WorkflowEngine()
     wf = engine_instance.start_workflow(db, "REQ-TEST0001", "CIT-1001")
@@ -230,8 +230,7 @@ async def test_workflow_retry(mock_retry_pub, mock_redis, db, seed_definition, s
 # ── Test 4: End-to-end workflow completion ────────────────────────────
 
 @pytest.mark.asyncio
-@patch("app.application.workflow_engine.redis_available", return_value=False)
-async def test_workflow_completed(mock_redis, db, seed_definition, seed_service_request):
+async def test_workflow_completed(db, seed_definition, seed_service_request):
     """Full lifecycle: start workflow → all steps succeed → SR status updated."""
     engine_instance = WorkflowEngine()
     wf = engine_instance.start_workflow(db, "REQ-TEST0001", "CIT-1001")

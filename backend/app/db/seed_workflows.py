@@ -2,16 +2,14 @@
 
 import logging
 from sqlalchemy.orm import Session
+from app.core.service_types import WORKFLOW_DEFINITIONS
 from app.models.workflow import WorkflowDefinition
 
 logger = logging.getLogger(__name__)
 
 DEFAULT_DEFINITIONS = [
-    {
-        "name": "business_registration",
-        "description": "Business Registration — sequential department verification pipeline",
-        "steps": ["identity", "property", "municipality", "tax"],
-    },
+    {"name": name, **definition}
+    for name, definition in WORKFLOW_DEFINITIONS.items()
 ]
 
 
@@ -23,4 +21,7 @@ def seed_workflow_definitions(db: Session) -> None:
             record = WorkflowDefinition(**defn)
             db.add(record)
             logger.info("seeded_workflow_definition name=%s", defn["name"])
+        else:
+            existing.description = defn["description"]
+            existing.steps = list(defn["steps"])
     db.commit()

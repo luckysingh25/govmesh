@@ -1,0 +1,10 @@
+[
+  {"citizenId":"CIT-1001","taxpayerName":"Asha Verma","taxId":"DEMO-TAX-1001","taxStatus":"CLEARED","outstandingAmount":0.0,"assessmentYear":"2025-2026"},
+  {"citizenId":"CIT-1002","taxpayerName":"Nila Rao","taxId":"DEMO-TAX-1002","taxStatus":"DUE","outstandingAmount":14500.5,"assessmentYear":"2025-2026"},
+  {"citizenId":"CIT-1003","taxpayerName":"Omar Das","taxId":"DEMO-TAX-1003","taxStatus":"CLEARED","outstandingAmount":0.0,"assessmentYear":"2025-2026"},
+  {"citizenId":"CIT-1004","taxpayerName":"Leela Sen","taxId":"DEMO-TAX-1004","taxStatus":"CLEARED","outstandingAmount":0.0,"assessmentYear":"2025-2026"},
+  {"citizenId":"CIT-1005","taxpayerName":"Ishan Kapoor","taxId":"DEMO-TAX-1005","taxStatus":"CLEARED","outstandingAmount":0.0,"assessmentYear":"2025-2026"},
+  {"citizenId":"CIT-1006","taxpayerName":"Kabir Jain","taxId":"DEMO-TAX-1006","taxStatus":"CLEARED","outstandingAmount":0.0,"assessmentYear":"2025-2026"},
+  {"citizenId":"CIT-1007","taxpayerName":"Mira Bose","taxId":"DEMO-TAX-1007","taxStatus":"CLEARED","outstandingAmount":0.0,"assessmentYear":"2025-2026"},
+  {"citizenId":"CIT-1008","taxpayerName":"Tara Mehta","taxId":"DEMO-TAX-1008","taxStatus":"PENDING","outstandingAmount":0.0,"assessmentYear":"2025-2026"}
+]

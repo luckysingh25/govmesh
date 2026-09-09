@@ -1,10 +1,21 @@
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from typing import Optional, Dict, Any, Literal
 from datetime import datetime
+import re
+
+from app.core.service_types import ServiceType
 
 class ServiceRequestCreate(BaseModel):
     citizen_id: str = Field(..., description="The ID of the citizen", examples=["CIT-1001"])
-    service_type: str = Field(..., description="Type of service requested", examples=["business_registration"])
+    service_type: ServiceType = Field(..., description="Type of service requested", examples=["business_registration"])
+
+    @field_validator("citizen_id")
+    @classmethod
+    def validate_citizen_id(cls, value: str) -> str:
+        normalized = value.strip().upper()
+        if not re.fullmatch(r"CIT-\d{4}", normalized):
+            raise ValueError("citizen_id must use the format CIT-1001")
+        return normalized
 
 class DepartmentResponse(BaseModel):
     status: str
@@ -44,5 +55,7 @@ class ServiceRequestListResponse(BaseModel):
     service_type: str
     status: str
     created_at: datetime
+    completed_at: Optional[datetime] = None
+    duration_ms: Optional[int] = None
     workflow_id: Optional[str] = None
     model_config = ConfigDict(from_attributes=True)

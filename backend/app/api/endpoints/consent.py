@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app.application.consent_service import ConsentService
 from app.db.session import get_db
 from app.schemas.consent import ConsentGrantRequest, ConsentResponse, ConsentRevokeResponse
+from app.core.service_types import ServiceType
 
 router = APIRouter()
 _service = ConsentService()
@@ -15,7 +16,7 @@ def grant_consent(payload: ConsentGrantRequest, db: Session = Depends(get_db)):
     consent = _service.grant(
         db,
         citizen_id=payload.citizen_id,
-        service_type=payload.service_type,
+        service_type=payload.service_type.value,
         departments=payload.departments,
         ttl_hours=payload.ttl_hours,
     )
@@ -31,8 +32,8 @@ def revoke_consent(consent_id: int, db: Session = Depends(get_db)):
 
 
 @router.get("/{citizen_id}/{service_type}", response_model=ConsentResponse)
-def get_active_consent(citizen_id: str, service_type: str, db: Session = Depends(get_db)):
-    consent = _service.get_active(db, citizen_id, service_type)
+def get_active_consent(citizen_id: str, service_type: ServiceType, db: Session = Depends(get_db)):
+    consent = _service.get_active(db, citizen_id.strip().upper(), service_type.value)
     if consent is None:
         raise HTTPException(status_code=404, detail="No active consent found")
     return consent

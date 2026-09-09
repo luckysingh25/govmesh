@@ -26,6 +26,12 @@ def list_requests(db: Session = Depends(get_db)):
             service_type=sr.service_type,
             status=sr.status,
             created_at=sr.created_at,
+            completed_at=sr.completed_at,
+            duration_ms=(
+                max(0, int((sr.completed_at - sr.created_at).total_seconds() * 1000))
+                if sr.completed_at and sr.created_at
+                else None
+            ),
             workflow_id=wf.workflow_id if wf else None,
         ))
     return results
@@ -38,6 +44,6 @@ async def create_service_request(
     return await ServiceRequestService().create(
         db=db,
         citizen_id=payload.citizen_id,
-        service_type=payload.service_type,
+        service_type=payload.service_type.value,
         correlation_id=request.state.correlation_id,
     )

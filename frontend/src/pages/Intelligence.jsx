@@ -67,7 +67,7 @@ export const Intelligence = () => {
           <h1 className="text-2xl font-bold flex items-center gap-2 mb-2">
             <BrainCircuit className="text-accent" /> Interoperability Intelligence
           </h1>
-          <p className="text-muted">AI-driven schema versioning, field mapping, and impact analysis.</p>
+          <p className="text-muted">Rule-based schema versioning, field mapping suggestions, and impact analysis.</p>
         </div>
         <button
           className="btn btn-primary"
@@ -91,7 +91,7 @@ export const Intelligence = () => {
                     <div>
                       <div className="text-xs text-muted mb-1 font-mono">ID: {sug.source_field_id}</div>
                       <div className="font-medium flex items-center gap-2">
-                        {/* {sug.source_field?.field_name} */} Source Field
+                        {sug.source_field?.field_name || `Field ${sug.source_field_id}`}
                         <GitMerge size={14} className="text-muted" />
                         <span className="text-accent">{sug.target_field}</span>
                       </div>

@@ -1,63 +1,102 @@
 import React from 'react';
 
+const humanize = (value) => String(value || 'unknown').replaceAll('_', ' ');
+
 const DepartmentCard = ({ name, data, icon }) => {
   if (!data) return null;
-  
+
   const isSuccess = data.status === 'success';
-  const displayData = data.data || {};
-  
+  const displayData = Object.entries(data.data || {}).filter(([, value]) => value !== null && value !== undefined && value !== '');
+  const status = humanize(data.status);
+
   return (
-    <div className={`dept-card ${isSuccess ? 'success' : 'error'}`}>
+    <article className={`dept-card ${isSuccess ? 'success' : 'error'}`} aria-label={`${name} result`}>
       <div className="dept-header">
-        <span className="dept-icon">{icon}</span>
+        <span className="dept-icon" aria-hidden="true">{icon}</span>
         <h3>{name}</h3>
-        <span className={`status-badge ${isSuccess ? 'success' : 'error'}`}>
-          {isSuccess ? 'Success' : 'Failed'}
-        </span>
+        <span className={`status-badge ${isSuccess ? 'success' : 'error'}`}>{status}</span>
       </div>
-      
+
       <div className="dept-content">
-        {isSuccess ? (
-          <ul className="data-list">
-            {Object.entries(displayData).map(([key, value]) => (
-              <li key={key}>
-                <span className="data-label">{key}:</span>
-                <span className="data-value">{String(value)}</span>
-              </li>
+        {displayData.length > 0 ? (
+          <dl className="data-list">
+            {displayData.map(([key, value]) => (
+              <div key={key} className="data-row">
+                <dt className="data-label">{humanize(key)}</dt>
+                <dd className="data-value">{String(value)}</dd>
+              </div>
             ))}
-          </ul>
+          </dl>
         ) : (
-          <p className="error-text">{data.error}</p>
+          <p className={isSuccess ? 'text-muted' : 'error-text'}>
+            {data.error || (isSuccess ? 'No details were returned.' : `Department result: ${status}.`)}
+          </p>
         )}
       </div>
-    </div>
+    </article>
   );
 };
 
+const AdvisoryInsights = ({ insights = [] }) => (
+  <section className="advisory-section" aria-labelledby="advisory-title">
+    <div className="advisory-heading">
+      <div>
+        <h3 id="advisory-title">Advisory Insights</h3>
+        <p className="text-muted text-sm">Deterministic checks across normalized department responses.</p>
+      </div>
+      <span className="badge badge-neutral">Rule-based</span>
+    </div>
+
+    {insights.length === 0 ? (
+      <p className="advisory-empty">No advisory issues were detected in the available records.</p>
+    ) : (
+      <ul className="advisory-list">
+        {insights.map((insight) => (
+          <li key={insight.rule_id} className={`advisory-item ${insight.severity}`}>
+            <span className={`badge badge-${insight.severity}`}>{insight.severity}</span>
+            <div>
+              <code>{insight.rule_id}</code>
+              <p>{insight.message}</p>
+            </div>
+          </li>
+        ))}
+      </ul>
+    )}
+
+    <p className="advisory-disclaimer">Advisory only — verify with the responsible department before taking action.</p>
+  </section>
+);
+
 const ResultsView = ({ result }) => {
   if (!result) return null;
+
+  const citizen = result.citizen || {};
+  const overallStatus = humanize(result.overall_status);
 
   return (
     <div className="results-container fade-in">
       <div className="results-header">
         <h2>Service Request Status</h2>
         <div className="meta-info">
-          <span><strong>Request ID:</strong> {result.request_id}</span>
-          <span><strong>Correlation ID:</strong> {result.correlation_id}</span>
+          {result.request_id && <span><strong>Request ID:</strong> {result.request_id}</span>}
+          {result.correlation_id && <span><strong>Correlation ID:</strong> {result.correlation_id}</span>}
           {result.consent_id && <span><strong>Consent ID:</strong> {result.consent_id}</span>}
           {result.policy_decision && <span className="text-xs text-muted"><strong>Policy:</strong> {result.policy_decision}</span>}
-          <span className={`badge ${result.overall_status === 'denied' ? 'badge-error' : 'badge-success'} mt-1`}>{result.overall_status.toUpperCase()}</span>
+          <span className={`badge ${result.overall_status === 'denied' ? 'badge-error' : 'badge-success'} mt-1`}>{overallStatus}</span>
         </div>
       </div>
-      
-      <div className="citizen-info">
-        <h3>Citizen Identity</h3>
+
+      <section className="citizen-info" aria-labelledby="citizen-title">
+        <h3 id="citizen-title">Citizen Identity</h3>
         <div className="citizen-grid">
-          <div><strong>ID:</strong> {result.citizen.citizen_id}</div>
-          <div><strong>Name:</strong> {result.citizen.name}</div>
-          <div className="full-width"><strong>Address:</strong> {result.citizen.address}</div>
+          {citizen.citizen_id && <div><strong>ID:</strong> {citizen.citizen_id}</div>}
+          {citizen.name && <div><strong>Name:</strong> {citizen.name}</div>}
+          {citizen.address && <div className="full-width"><strong>Address:</strong> {citizen.address}</div>}
+          {!citizen.citizen_id && !citizen.name && !citizen.address && <p className="text-muted">Citizen details are unavailable.</p>}
         </div>
-      </div>
+      </section>
+
+      <AdvisoryInsights insights={result.insights} />
 
       <div className="departments-grid">
         <DepartmentCard name="Identity" data={result.identity} icon="👤" />

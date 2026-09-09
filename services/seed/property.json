@@ -1,0 +1,9 @@
+[
+  {"citizenId":"CIT-1001","ownerName":"Asha Verma","propertyId":"DEMO-PROP-1001","propertyAddress":"101 Example Avenue, Demo District","propertyType":"Commercial","ownershipStatus":"ACTIVE"},
+  {"citizenId":"CIT-1002","ownerName":"Nila Rao","propertyId":"DEMO-PROP-1002","propertyAddress":"202 Sample Street, Demo District","propertyType":"Residential","ownershipStatus":"ACTIVE"},
+  {"citizenId":"CIT-1004","ownerName":"Leela Sen","propertyId":"DEMO-PROP-1004","propertyAddress":"404 Sandbox Road, Demo District","propertyType":"Residential","ownershipStatus":"ACTIVE"},
+  {"citizenId":"CIT-1005","ownerName":"Ishan Kapoor","propertyId":"DEMO-PROP-1005","propertyAddress":"505 Fixture Close, Demo District","propertyType":"Commercial","ownershipStatus":"ACTIVE"},
+  {"citizenId":"CIT-1006","ownerName":"Rhea Jain","propertyId":"DEMO-PROP-1006","propertyAddress":"606 Test Garden, Demo District","propertyType":"Residential","ownershipStatus":"ACTIVE"},
+  {"citizenId":"CIT-1007","ownerName":"Mira Bose","propertyId":"DEMO-PROP-1007","propertyAddress":"707 Harmony Lane, Demo District","propertyType":"Residential","ownershipStatus":"ACTIVE"},
+  {"citizenId":"CIT-1008","ownerName":"Tara Mehta","propertyId":"DEMO-PROP-1008","propertyAddress":"808 Queue Terrace, Demo District","propertyType":"Commercial","ownershipStatus":"ACTIVE"}
+]

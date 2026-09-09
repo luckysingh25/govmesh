@@ -1,10 +1,10 @@
-import logging
-from app.connectors.base import BaseConnector, ConnectorResult
 import httpx
+import logging
+
+from app.connectors.base import BaseConnector, ConnectorResult
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
-
-from app.core.config import settings
 
 class MunicipalityConnector(BaseConnector):
     def __init__(self, base_url: str = None):
@@ -12,7 +12,6 @@ class MunicipalityConnector(BaseConnector):
 
     async def fetch_data(self, citizen_id: str) -> ConnectorResult:
         try:
-            # Simulate API key authentication
             headers = {"x-api-key": "sim_municipality_key"}
             response = await self.client.get(f"{self.base_url}/api/municipality/{citizen_id}", headers=headers)
             response.raise_for_status()
@@ -23,18 +22,20 @@ class MunicipalityConnector(BaseConnector):
                 "resident_name": data["resident_name"],
                 "ward": data["ward"],
                 "address": data["address"],
+                "registration_status": data["registration_status"],
             })
-        except httpx.HTTPStatusError as e:
-            logger.error(f"Municipality API HTTP error: {e}")
-            return ConnectorResult("municipality", "failed", {}, f"HTTP Error {e.response.status_code}")
-        except httpx.RequestError as e:
-            logger.warning(f"Municipality API Request error (falling back to mock data): {e}")
-            return ConnectorResult("municipality", "success", {
-                "municipal_id": "MUN-5544",
-                "resident_name": "Rajesh Kumar",
-                "ward": "Ward 72",
-                "address": "123 MG Road, Bangalore",
-            })
-        except Exception as e:
-            logger.exception("Unexpected error in MunicipalityConnector")
-            return ConnectorResult("municipality", "failed", {}, str(e))
+        except httpx.HTTPStatusError as exc:
+            status = exc.response.status_code
+            logger.warning("municipality_http_error status=%s", status)
+            if status == 404:
+                return ConnectorResult("municipality", "not_found", {}, "Municipality record was not found")
+            return ConnectorResult("municipality", "failed", {}, "Municipality service returned an error")
+        except httpx.TimeoutException:
+            logger.warning("municipality_timeout")
+            return ConnectorResult("municipality", "timeout", {}, "Municipality service timed out")
+        except httpx.RequestError:
+            logger.warning("municipality_unavailable")
+            return ConnectorResult("municipality", "unavailable", {}, "Municipality service could not be reached")
+        except (KeyError, TypeError, ValueError):
+            logger.warning("municipality_invalid_response")
+            return ConnectorResult("municipality", "invalid_response", {}, "Municipality service returned an invalid response")

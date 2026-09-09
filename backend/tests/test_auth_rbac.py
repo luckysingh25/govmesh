@@ -25,13 +25,15 @@ app.dependency_overrides[get_db] = override_db
 client = TestClient(app)
 
 def test_register_and_login():
+    app.dependency_overrides[get_db] = override_db
     # Register
     reg_response = client.post(
         "/api/v1/auth/register",
-        json={"email": "test@govmesh.com", "password": "securepassword", "role": "admin"}
+        json={"email": "test@govmesh.com", "password": "securepassword", "role": "citizen"}
     )
     assert reg_response.status_code == 201
     assert reg_response.json()["email"] == "test@govmesh.com"
+    assert reg_response.json()["role"] == "citizen"
 
     # Login
     login_response = client.post(
@@ -51,6 +53,7 @@ def test_register_and_login():
     assert me_response.json()["email"] == "test@govmesh.com"
 
 def test_rbac_protection():
+    app.dependency_overrides[get_db] = override_db
     # Register citizen
     client.post(
         "/api/v1/auth/register",
@@ -71,3 +74,18 @@ def test_rbac_protection():
     )
     # Should be forbidden since role is citizen
     assert sys_resp.status_code == 403
+
+
+def test_public_registration_rejects_role_elevation_and_weak_passwords():
+    app.dependency_overrides[get_db] = override_db
+    elevated = client.post(
+        "/api/v1/auth/register",
+        json={"email": "attacker@govmesh.com", "password": "securepassword", "role": "admin"},
+    )
+    weak = client.post(
+        "/api/v1/auth/register",
+        json={"email": "weak@govmesh.com", "password": "short", "role": "citizen"},
+    )
+
+    assert elevated.status_code == 422
+    assert weak.status_code == 422

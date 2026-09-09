@@ -1,4 +1,5 @@
 from functools import lru_cache
+from typing import Literal
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -18,6 +19,7 @@ class Settings(BaseSettings):
     property_url: str = "http://localhost:8103"
     tax_url: str = "http://localhost:8104"
     cors_origins: str = "http://localhost:3000,http://localhost:5173"
+    workflow_execution_mode: Literal["sync"] = "sync"
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

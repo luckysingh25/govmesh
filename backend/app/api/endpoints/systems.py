@@ -1,4 +1,8 @@
+import asyncio
+import time
 from typing import List
+
+import httpx
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.db.session import get_db
@@ -33,39 +37,49 @@ def create_system(
 
 @router.get("/monitoring")
 async def get_monitoring():
-    import time
-    from app.connectors.identity import IdentityConnector
-    from app.connectors.property import PropertyConnector
-    from app.connectors.municipality import MunicipalityConnector
-    from app.connectors.tax import TaxConnector
+    from app.core.config import settings
 
-    connectors = {
-        "identity": IdentityConnector(),
-        "property": PropertyConnector(),
-        "municipality": MunicipalityConnector(),
-        "tax": TaxConnector()
+    departments = (
+        ("identity", "Identity Service", settings.identity_url, "REST"),
+        ("property", "Property Service", settings.property_url, "SOAP"),
+        ("municipality", "Municipality Service", settings.municipality_url, "REST"),
+        ("tax", "Tax Service", settings.tax_url, "REST"),
+    )
+    async with httpx.AsyncClient(timeout=2.0) as client:
+        return await asyncio.gather(
+            *(check_department_health(client, *department) for department in departments)
+        )
+
+
+async def check_department_health(
+    client: httpx.AsyncClient,
+    identifier: str,
+    name: str,
+    base_url: str,
+    protocol: str,
+) -> dict:
+    """Measure one real health endpoint without inventing historical metrics."""
+    started = time.perf_counter()
+    status = "Offline"
+    try:
+        response = await client.get(f"{base_url.rstrip('/')}/health")
+        status = "Online" if response.is_success else "Degraded"
+        if response.is_success:
+            payload = response.json()
+            if str(payload.get("status", "")).casefold() not in {"healthy", "ok", "online"}:
+                status = "Degraded"
+    except (httpx.TimeoutException, httpx.RequestError):
+        status = "Offline"
+    except (TypeError, ValueError):
+        status = "Degraded"
+
+    return {
+        "id": identifier,
+        "name": name,
+        "system_type": "Department",
+        "protocol": protocol,
+        "status": status,
+        "latency_ms": max(0, round((time.perf_counter() - started) * 1000)),
+        "uptime_percent": None,
+        "error_rate": None,
     }
-    
-    results = []
-    for name, connector in connectors.items():
-        t0 = time.perf_counter()
-        try:
-            res = await connector.fetch_data("MONITOR-PING")
-            latency = int((time.perf_counter() - t0) * 1000)
-            status = "Online" if res.status == "success" else "Degraded"
-        except Exception:
-            latency = 0
-            status = "Offline"
-            
-        results.append({
-            "id": name,
-            "name": name.capitalize() + " Service",
-            "system_type": "Department",
-            "protocol": "REST" if name != "property" else "SOAP",
-            "status": status,
-            "latency_ms": latency,
-            "uptime_percent": 99.9 if status == "Online" else 0.0,
-            "error_rate": "0.01%" if status == "Online" else "100%"
-        })
-        
-    return results
