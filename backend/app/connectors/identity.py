@@ -1,10 +1,10 @@
-import logging
-from app.connectors.base import BaseConnector, ConnectorResult
 import httpx
+import logging
+
+from app.connectors.base import BaseConnector, ConnectorResult
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
-
-from app.core.config import settings
 
 class IdentityConnector(BaseConnector):
     def __init__(self, base_url: str = None):
@@ -12,27 +12,28 @@ class IdentityConnector(BaseConnector):
 
     async def fetch_data(self, citizen_id: str) -> ConnectorResult:
         try:
-            # Simulate a JWT token requirement (just an Authorization header)
             headers = {"Authorization": "Bearer sim_token_123"}
             response = await self.client.get(f"{self.base_url}/api/identity/{citizen_id}", headers=headers)
             response.raise_for_status()
-            
             data = response.json()
             return ConnectorResult("identity", "success", {
                 "full_name": data["full_name"],
                 "date_of_birth": data["date_of_birth"],
                 "address": data["address"],
+                "verification_status": data["verification_status"],
             })
-        except httpx.HTTPStatusError as e:
-            logger.error(f"Identity API HTTP error: {e}")
-            return ConnectorResult("identity", "failed", {}, f"HTTP Error {e.response.status_code}")
-        except httpx.RequestError as e:
-            logger.warning(f"Identity API Request error (falling back to mock data): {e}")
-            return ConnectorResult("identity", "success", {
-                "full_name": "Rajesh Kumar",
-                "date_of_birth": "1985-04-12",
-                "address": "123 MG Road, Bangalore",
-            })
-        except Exception as e:
-            logger.exception("Unexpected error in IdentityConnector")
-            return ConnectorResult("identity", "failed", {}, str(e))
+        except httpx.HTTPStatusError as exc:
+            status = exc.response.status_code
+            logger.warning("identity_http_error status=%s", status)
+            if status == 404:
+                return ConnectorResult("identity", "not_found", {}, "Identity record was not found")
+            return ConnectorResult("identity", "failed", {}, "Identity service returned an error")
+        except httpx.TimeoutException:
+            logger.warning("identity_timeout")
+            return ConnectorResult("identity", "timeout", {}, "Identity service timed out")
+        except httpx.RequestError:
+            logger.warning("identity_unavailable")
+            return ConnectorResult("identity", "unavailable", {}, "Identity service could not be reached")
+        except (KeyError, TypeError, ValueError):
+            logger.warning("identity_invalid_response")
+            return ConnectorResult("identity", "invalid_response", {}, "Identity service returned an invalid response")
