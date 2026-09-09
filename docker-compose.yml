@@ -21,6 +21,8 @@ services:
 
   frontend:
     build: ./frontend
+    environment:
+      VITE_DEV_PROXY_TARGET: http://backend:8000
     ports:
       - "3000:3000"
     depends_on:
@@ -48,22 +50,30 @@ services:
       - "6379:6379"
 
   identity-service:
-    build: ./services/identity-service
+    build:
+      context: ./services
+      dockerfile: identity-service/Dockerfile
     environment: { DEPARTMENT_NAME: identity }
     ports: ["8101:8100"]
 
   municipality-service:
-    build: ./services/municipality-service
+    build:
+      context: ./services
+      dockerfile: municipality-service/Dockerfile
     environment: { DEPARTMENT_NAME: municipality }
     ports: ["8102:8100"]
 
   property-service:
-    build: ./services/property-service
+    build:
+      context: ./services
+      dockerfile: property-service/Dockerfile
     environment: { DEPARTMENT_NAME: property }
     ports: ["8103:8100"]
 
   tax-service:
-    build: ./services/tax-service
+    build:
+      context: ./services
+      dockerfile: tax-service/Dockerfile
     environment: { DEPARTMENT_NAME: tax }
     ports: ["8104:8100"]
 
