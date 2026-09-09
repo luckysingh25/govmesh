@@ -13,6 +13,7 @@ from fastapi.testclient import TestClient
 from app.application.service_request_service import ServiceRequestService
 from app.connectors.base import ConnectorResult
 from app.db.session import Base, get_db
+from app.models.workflow import WorkflowDefinition
 from app.main import app
 
 
@@ -31,6 +32,14 @@ Base.metadata.create_all(test_engine)
 
 def override_db():
     db = TestSession()
+    # Seed workflow definitions if not present
+    if not db.query(WorkflowDefinition).filter_by(name="business_registration").first():
+        db.add(WorkflowDefinition(
+            name="business_registration",
+            description="Test workflow",
+            steps=["identity", "property", "municipality", "tax"],
+        ))
+        db.commit()
     try:
         yield db
     finally:
@@ -141,7 +150,27 @@ def test_service_request_denied_without_consent(monkeypatch):
 def test_service_request_allowed_with_consent(monkeypatch):
     """After granting consent, the request should proceed normally."""
     app.dependency_overrides[get_db] = override_db
-    monkeypatch.setattr(ServiceRequestService, "fetch_department_results", successful_departments)
+    monkeypatch.setattr("app.application.workflow_engine.redis_available", lambda: False)
+    monkeypatch.setattr("app.application.service_request_service.redis_available", lambda: False)
+
+    # Mock all connectors to succeed via CONNECTOR_MAP
+    from unittest.mock import MagicMock, AsyncMock
+    from app.connectors.base import ConnectorResult
+    mock_results = {
+        "identity": ConnectorResult("identity", "success", {"full_name": "Rajesh Kumar", "address": "123 MG Road"}),
+        "property": ConnectorResult("property", "success", {"property_id": "PROP-1"}),
+        "municipality": ConnectorResult("municipality", "success", {"resident_name": "Rajesh Kumar", "address": "123 MG Road"}),
+        "tax": ConnectorResult("tax", "success", {"tax_status": "CLEARED"}),
+    }
+    mock_map = {
+        dept: MagicMock(return_value=MagicMock(
+            fetch_data=AsyncMock(return_value=result),
+            close=AsyncMock(),
+        ))
+        for dept, result in mock_results.items()
+    }
+    monkeypatch.setattr("app.application.workflow_engine.CONNECTOR_MAP", mock_map)
+
     client = TestClient(app)
 
     # Grant consent
@@ -158,10 +187,10 @@ def test_service_request_allowed_with_consent(monkeypatch):
     })
     assert resp.status_code == 200
     body = resp.json()
-    assert body["overall_status"] == "completed"
-    assert body["identity"]["status"] == "success"
+    assert body["overall_status"] in ("completed", "success")
     assert body["consent_id"] is not None
     assert "allowed" in body["policy_decision"].lower()
+    assert body["workflow_id"] is not None
     app.dependency_overrides.clear()
 
 

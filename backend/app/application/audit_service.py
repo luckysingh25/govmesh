@@ -29,3 +29,19 @@ class AuditService:
         db.commit()
         logger.info(f"audit_event: {event_type} | {actor} -> {target} | {outcome} | {detail}")
         return record
+
+    def get_logs_by_correlation(self, db: Session, correlation_id: str) -> list[AuditLog]:
+        return (
+            db.query(AuditLog)
+            .filter(AuditLog.correlation_id == correlation_id)
+            .order_by(AuditLog.created_at.desc())
+            .all()
+        )
+
+    def get_recent_logs(self, db: Session, limit: int = 50) -> list[AuditLog]:
+        return (
+            db.query(AuditLog)
+            .order_by(AuditLog.created_at.desc())
+            .limit(limit)
+            .all()
+        )

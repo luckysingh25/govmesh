@@ -6,13 +6,18 @@ from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 
 from app.application.policy_service import PolicyService
+from app.application.workflow_engine import WorkflowEngine
 from app.connectors.base import ConnectorResult
 from app.connectors.identity import IdentityConnector
 from app.connectors.municipality import MunicipalityConnector
 from app.connectors.property import PropertyConnector
 from app.connectors.tax import TaxConnector
+from app.core.event_bus import redis_available
 from app.models.service_request import ServiceRequest
+from app.models.workflow import WorkflowInstance
 from app.schemas.service_request import CitizenInfo, DepartmentResponse, ServiceRequestResponse
+from app.application.data_lineage_service import DataLineageService
+from app.application.audit_service import AuditService
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +45,11 @@ from app.models.data_request import DataRequest
 
 class ServiceRequestService:
     """Persist a request and coordinate the four simulated department adaptors."""
+
+    def __init__(self):
+        self._workflow_engine = WorkflowEngine()
+        self._data_lineage = DataLineageService()
+        self._audit = AuditService()
 
     async def fetch_department_results(self, db: Session, citizen_id: str, request_id: str) -> list[ConnectorResult]:
         connectors = [IdentityConnector(), PropertyConnector(), MunicipalityConnector(), TaxConnector()]
@@ -92,6 +102,16 @@ class ServiceRequestService:
         db.add(record)
         db.commit()
 
+        self._audit.log_event(
+            db=db,
+            event_type="Service Request Started",
+            actor=f"Citizen ({citizen_id})",
+            target="GovMesh Core",
+            detail=f"Initiated {service_type}",
+            outcome="success",
+            correlation_id=correlation_id
+        )
+
         # --- Policy gate ---
         policy = PolicyService().evaluate(db, citizen_id, service_type, correlation_id)
         if policy.decision == "deny":
@@ -113,34 +133,95 @@ class ServiceRequestService:
                 policy_decision=policy.reason,
             )
 
-        # --- Consent OK — fetch department data ---
-        results = await self.fetch_department_results(db, citizen_id, request_id)
-        by_department = {result.department: result for result in results}
-        identity = by_department["identity"]
-        municipality = by_department["municipality"]
+        # --- Consent OK — start the workflow ---
+        workflow_instance = self._workflow_engine.start_workflow(
+            db=db,
+            service_request_id=request_id,
+            citizen_id=citizen_id,
+            definition_name="business_registration",
+        )
+        workflow_id = workflow_instance.workflow_id
 
-        record.status = overall_status(results)
-        record.completed_at = datetime.now(timezone.utc)
-        db.commit()
+        # If Redis is available, the workflow runs asynchronously via workers.
+        # Otherwise fall back to synchronous execution.
+        if not redis_available():
+            await self._workflow_engine.execute_workflow_sync(db, workflow_instance.id)
+            db.refresh(workflow_instance)
+
+        # Build response from workflow step results
+        db.refresh(record)
+        dept_results = self._build_dept_responses(workflow_instance)
 
         logger.info(
             "service_request_completed",
             extra={"request_id": request_id, "correlation_id": correlation_id, "status": record.status},
         )
+
+        # Record data lineage for name and address mappings
+        citizen_name = "Unknown"
+        citizen_address = "Unknown"
+        
+        identity_data = dept_results.get("identity", {})
+        municipality_data = dept_results.get("municipality", {})
+        
+        if identity_data.get("full_name"):
+            citizen_name = identity_data["full_name"]
+            self._data_lineage.record_lineage(db, correlation_id, "Identity DB", "full_name", "GovMesh Response", "citizen.name", "exact match", request_id)
+        elif municipality_data.get("resident_name"):
+            citizen_name = municipality_data["resident_name"]
+            self._data_lineage.record_lineage(db, correlation_id, "Municipality Records", "resident_name", "GovMesh Response", "citizen.name", "fallback map", request_id)
+            
+        if identity_data.get("address"):
+            citizen_address = identity_data["address"]
+            self._data_lineage.record_lineage(db, correlation_id, "Identity DB", "address", "GovMesh Response", "citizen.address", "exact match", request_id)
+        elif municipality_data.get("address"):
+            citizen_address = municipality_data["address"]
+            self._data_lineage.record_lineage(db, correlation_id, "Municipality Records", "address", "GovMesh Response", "citizen.address", "fallback map", request_id)
+
+        self._audit.log_event(
+            db=db,
+            event_type="Service Request Completed",
+            actor="GovMesh Workflow Engine",
+            target=f"Citizen ({citizen_id})",
+            detail=f"Status: {record.status}",
+            outcome="success" if record.status == "completed" else "warning",
+            correlation_id=correlation_id
+        )
+
         return ServiceRequestResponse(
             request_id=request_id,
             correlation_id=correlation_id,
             citizen=CitizenInfo(
                 citizen_id=citizen_id,
-                name=identity.data.get("full_name") or municipality.data.get("resident_name") or "Unknown",
-                address=identity.data.get("address") or municipality.data.get("address") or "Unknown",
+                name=citizen_name,
+                address=citizen_address,
             ),
-            identity=department_response(identity),
-            property=department_response(by_department["property"]),
-            municipality=department_response(municipality),
-            tax=department_response(by_department["tax"]),
+            identity=self._step_to_dept("identity", workflow_instance),
+            property=self._step_to_dept("property", workflow_instance),
+            municipality=self._step_to_dept("municipality", workflow_instance),
+            tax=self._step_to_dept("tax", workflow_instance),
             overall_status=record.status,
             consent_id=policy.consent_id,
             policy_decision="Consent verified — access allowed",
+            workflow_id=workflow_id,
         )
 
+    # ── Helpers ─────────────────────────────────────────────────────
+
+    def _build_dept_responses(self, workflow: WorkflowInstance) -> dict:
+        """Extract result_data keyed by step_name from workflow steps."""
+        data = {}
+        for step in workflow.steps:
+            data[step.step_name] = step.result_data or {}
+        return data
+
+    def _step_to_dept(self, dept_name: str, workflow: WorkflowInstance) -> DepartmentResponse:
+        """Convert a workflow step into a DepartmentResponse."""
+        for step in workflow.steps:
+            if step.step_name == dept_name:
+                return DepartmentResponse(
+                    status=step.status,
+                    data=step.result_data if step.result_data else None,
+                    error=step.error_message,
+                )
+        return DepartmentResponse(status="pending", data=None, error=None)

@@ -1,16 +1,32 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card } from '../components/ui/Card';
 import { StatusBadge } from '../components/ui/StatusBadge';
+import { fetchGlobalAuditLogs } from '../services/api';
+import { formatDistanceToNow } from 'date-fns';
 
 export const AuditActivity = () => {
-  const auditLogs = [
-    { id: 'EVT-9001', time: '10 mins ago', type: 'Policy Decision', actor: 'System Engine', target: 'CIT-1001', detail: 'Consent verified — access allowed', outcome: 'allow' },
-    { id: 'EVT-9000', time: '10 mins ago', type: 'Consent Granted', actor: 'Citizen (CIT-1001)', target: 'GovMesh Core', detail: 'Granted access to Identity, Property, Tax, Municipality', outcome: 'success' },
-    { id: 'EVT-8999', time: '45 mins ago', type: 'Policy Decision', actor: 'System Engine', target: 'CIT-4592', detail: 'No active consent found', outcome: 'deny' },
-    { id: 'EVT-8998', time: '2 hours ago', type: 'System Error', actor: 'Municipality Connector', target: 'Legacy DB', detail: 'Connection timeout after 5000ms', outcome: 'error' },
-    { id: 'EVT-8997', time: '3 hours ago', type: 'Consent Revoked', actor: 'Citizen (CIT-3301)', target: 'GovMesh Core', detail: 'Revoked access manually via portal', outcome: 'success' },
-  ];
+  const [auditLogs, setAuditLogs] = useState([]);
+  const [loading, setLoading] = useState(true);
 
+  useEffect(() => {
+    const loadLogs = async () => {
+      try {
+        const data = await fetchGlobalAuditLogs(50);
+        setAuditLogs(data);
+      } catch (error) {
+        console.error('Failed to load audit logs:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadLogs();
+    
+    // Auto-refresh every 10 seconds
+    const interval = setInterval(loadLogs, 10000);
+    return () => clearInterval(interval);
+  }, []);
+  
   return (
     <div className="flex-col gap-6 flex fade-in">
       <Card title="Security & Audit Logs">
@@ -22,7 +38,8 @@ export const AuditActivity = () => {
           <table className="table">
             <thead>
               <tr>
-                <th>Event ID</th>
+                <th>Log ID</th>
+                <th>Correlation ID</th>
                 <th>Time</th>
                 <th>Type</th>
                 <th>Actor</th>
@@ -32,22 +49,29 @@ export const AuditActivity = () => {
               </tr>
             </thead>
             <tbody>
-              {auditLogs.map(log => (
-                <tr key={log.id}>
-                  <td className="font-mono text-xs">{log.id}</td>
-                  <td className="text-muted text-sm">{log.time}</td>
-                  <td className="font-medium">{log.type}</td>
-                  <td className="text-sm">{log.actor}</td>
-                  <td className="text-sm">{log.target}</td>
-                  <td className="text-sm text-muted">{log.detail}</td>
-                  <td>
+              {loading && auditLogs.length === 0 ? (
+                <tr>
+                  <td colSpan="8" className="text-center py-8 text-muted">Loading audit logs...</td>
+                </tr>
+              ) : (
+                auditLogs.map(log => (
+                  <tr key={log.id}>
+                    <td className="font-mono text-xs text-muted">LOG-{log.id}</td>
+                    <td className="font-mono text-xs">{log.correlation_id?.substring(0, 8) || '-'}</td>
+                    <td className="text-muted text-sm">{formatDistanceToNow(new Date(log.created_at), { addSuffix: true })}</td>
+                    <td className="font-medium">{log.event_type}</td>
+                    <td className="text-sm">{log.actor}</td>
+                    <td className="text-sm">{log.target}</td>
+                    <td className="text-sm text-muted">{log.detail}</td>
+                    <td>
                     <StatusBadge status={
                       log.outcome === 'allow' || log.outcome === 'success' ? 'success' :
                       log.outcome === 'deny' || log.outcome === 'error' ? 'error' : 'warning'
                     } />
                   </td>
                 </tr>
-              ))}
+              ))
+            )}
             </tbody>
           </table>
         </div>

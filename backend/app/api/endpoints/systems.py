@@ -30,3 +30,42 @@ def create_system(
     db.commit()
     db.refresh(new_system)
     return new_system
+
+@router.get("/monitoring")
+async def get_monitoring():
+    import time
+    from app.connectors.identity import IdentityConnector
+    from app.connectors.property import PropertyConnector
+    from app.connectors.municipality import MunicipalityConnector
+    from app.connectors.tax import TaxConnector
+
+    connectors = {
+        "identity": IdentityConnector(),
+        "property": PropertyConnector(),
+        "municipality": MunicipalityConnector(),
+        "tax": TaxConnector()
+    }
+    
+    results = []
+    for name, connector in connectors.items():
+        t0 = time.perf_counter()
+        try:
+            res = await connector.fetch_data("MONITOR-PING")
+            latency = int((time.perf_counter() - t0) * 1000)
+            status = "Online" if res.status == "success" else "Degraded"
+        except Exception:
+            latency = 0
+            status = "Offline"
+            
+        results.append({
+            "id": name,
+            "name": name.capitalize() + " Service",
+            "system_type": "Department",
+            "protocol": "REST" if name != "property" else "SOAP",
+            "status": status,
+            "latency_ms": latency,
+            "uptime_percent": 99.9 if status == "Online" else 0.0,
+            "error_rate": "0.01%" if status == "Online" else "100%"
+        })
+        
+    return results

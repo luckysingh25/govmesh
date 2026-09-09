@@ -17,9 +17,13 @@ from app.models.user import User
 from app.models.system import System
 from app.models.data_request import DataRequest
 from app.models.audit_log import AuditLog
+from app.models.workflow import WorkflowDefinition, WorkflowInstance, WorkflowStepInstance
+from app.models.data_lineage import DataLineage
+from app.models.intelligence import SystemSchema, SchemaField, MappingSuggestion, ImpactAnalysis
 
 config = context.config
-config.set_main_option("sqlalchemy.url", settings.database_url)
+unpooled_url = os.environ.get("DATABASE_URL_UNPOOLED") or settings.database_url
+config.set_main_option("sqlalchemy.url", unpooled_url)
 
 if config.config_file_name:
     fileConfig(config.config_file_name)
