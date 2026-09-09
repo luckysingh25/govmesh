@@ -13,6 +13,8 @@ from app.models.audit_log import AuditLog
 from app.models.workflow import WorkflowDefinition, WorkflowInstance, WorkflowStepInstance
 from app.models.data_lineage import DataLineage
 from app.models.intelligence import SystemSchema, SchemaField, MappingSuggestion, ImpactAnalysis
+from app.models.user import User
+from app.core.auth import get_password_hash
 
 test_engine = create_engine(
     "sqlite://",
@@ -38,8 +40,11 @@ app.db.session.SessionLocal = TestSession
 client = TestClient(fastapi_app)
 
 def test_create_and_list_systems():
-    # Register and login as admin
-    client.post("/api/v1/auth/register", json={"email": "admin2@govmesh.com", "password": "password", "role": "admin"})
+    fastapi_app.dependency_overrides[get_db] = override_db
+    # Privileged users are provisioned internally, never through public registration.
+    with TestSession() as db:
+        db.add(User(email="admin2@govmesh.com", hashed_password=get_password_hash("password"), role="admin"))
+        db.commit()
     login = client.post("/api/v1/auth/login", data={"username": "admin2@govmesh.com", "password": "password"})
     token = login.json()["access_token"]
 
@@ -64,6 +69,7 @@ def test_create_and_list_systems():
     assert list_resp.json()[-1]["name"] == "Federal Tax DB"
 
 def test_service_requests_list():
+    fastapi_app.dependency_overrides[get_db] = override_db
     resp = client.get("/api/v1/service-requests")
     assert resp.status_code == 200
     assert isinstance(resp.json(), list)
