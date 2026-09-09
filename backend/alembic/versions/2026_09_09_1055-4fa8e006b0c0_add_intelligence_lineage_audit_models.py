@@ -25,7 +25,7 @@ def upgrade() -> None:
     sa.Column('destination_system', sa.String(), nullable=False),
     sa.Column('destination_field', sa.String(), nullable=False),
     sa.Column('transformation', sa.String(), nullable=True),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=False),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_data_lineage_correlation_id'), 'data_lineage', ['correlation_id'], unique=False)
@@ -37,7 +37,7 @@ def upgrade() -> None:
     sa.Column('old_version', sa.Integer(), nullable=True),
     sa.Column('new_version', sa.Integer(), nullable=False),
     sa.Column('analysis_result', sa.JSON(), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=False),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_impact_analyses_id'), 'impact_analyses', ['id'], unique=False)
@@ -48,7 +48,7 @@ def upgrade() -> None:
     sa.Column('version', sa.Integer(), nullable=False),
     sa.Column('content', sa.JSON(), nullable=False),
     sa.Column('status', sa.String(), nullable=True),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=False),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_system_schemas_id'), 'system_schemas', ['id'], unique=False)
@@ -71,7 +71,7 @@ def upgrade() -> None:
     sa.Column('confidence_score', sa.Float(), nullable=False),
     sa.Column('mapping_type', sa.String(), nullable=False),
     sa.Column('status', sa.String(), nullable=True),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=False),
     sa.ForeignKeyConstraint(['source_field_id'], ['schema_fields.id'], ),
     sa.PrimaryKeyConstraint('id')
     )

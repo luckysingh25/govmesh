@@ -11,6 +11,7 @@ from app.connectors.base import ConnectorResult
 from app.db.seed_workflows import seed_workflow_definitions
 from app.db.session import Base, get_db
 from app.main import app
+from tests.auth_helpers import admin_headers
 
 
 SEED_DIR = Path(__file__).resolve().parents[2] / "services" / "seed"
@@ -57,7 +58,7 @@ def normalized_result(department, citizen_id):
 class SeedConnector:
     department = ""
 
-    async def fetch_data(self, citizen_id):
+    async def fetch_data(self, citizen_id, correlation_id=None):
         return normalized_result(self.department, citizen_id)
 
     async def close(self):
@@ -85,7 +86,7 @@ def client(monkeypatch):
         "app.application.workflow_engine.CONNECTOR_MAP",
         {department: connector_class(department) for department in RECORDS},
     )
-    yield TestClient(app)
+    yield TestClient(app, headers=admin_headers(Session))
     app.dependency_overrides.clear()
     engine.dispose()
 

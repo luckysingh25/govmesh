@@ -42,6 +42,9 @@ class MappingSuggestion(Base):
     confidence_score = Column(Float, nullable=False) # 0.0 to 1.0
     mapping_type = Column(String, nullable=False) # exact, normalized, semantic, transformation-required, incompatible
     status = Column(String, default="pending") # pending, approved, rejected
+    reviewed_by = Column(String, nullable=True)
+    reviewed_at = Column(DateTime(timezone=True), nullable=True)
+    mapping_version = Column(Integer, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     
     source_field = relationship("SchemaField", back_populates="mappings")

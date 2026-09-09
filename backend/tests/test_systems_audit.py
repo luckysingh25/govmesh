@@ -63,13 +63,16 @@ def test_create_and_list_systems():
     assert create_resp.json()["name"] == "Federal Tax DB"
 
     # List systems (unprotected endpoint)
-    list_resp = client.get("/api/v1/systems")
+    list_resp = client.get("/api/v1/systems", headers=headers)
     assert list_resp.status_code == 200
     assert len(list_resp.json()) >= 1
     assert list_resp.json()[-1]["name"] == "Federal Tax DB"
 
 def test_service_requests_list():
     fastapi_app.dependency_overrides[get_db] = override_db
-    resp = client.get("/api/v1/service-requests")
+    with TestSession() as db:
+        admin = db.query(User).filter_by(email="admin2@govmesh.com").first()
+    token = client.post("/api/v1/auth/login", data={"username": admin.email, "password": "password"}).json()["access_token"]
+    resp = client.get("/api/v1/service-requests", headers={"Authorization": f"Bearer {token}"})
     assert resp.status_code == 200
     assert isinstance(resp.json(), list)

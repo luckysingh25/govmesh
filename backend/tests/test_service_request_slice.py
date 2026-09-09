@@ -9,6 +9,7 @@ from app.connectors.base import ConnectorResult
 from app.db.session import Base, get_db
 from app.models.workflow import WorkflowDefinition
 from app.main import app
+from tests.auth_helpers import admin_headers
 
 
 test_engine = create_engine(
@@ -18,6 +19,7 @@ test_engine = create_engine(
 )
 TestSession = sessionmaker(bind=test_engine)
 Base.metadata.create_all(test_engine)
+AUTH_HEADERS = admin_headers(TestSession)
 
 
 def override_db():
@@ -118,7 +120,7 @@ def test_create_request_returns_unified_response_and_correlation_id(monkeypatch)
     }
     monkeypatch.setattr("app.application.workflow_engine.CONNECTOR_MAP", mock_map)
 
-    client = TestClient(app)
+    client = TestClient(app, headers=AUTH_HEADERS)
 
     # Grant consent first (required by the policy gate)
     client.post("/api/v1/consent", json={
@@ -160,7 +162,7 @@ def test_create_request_includes_post_aggregation_insights(monkeypatch):
     }
     monkeypatch.setattr("app.application.workflow_engine.CONNECTOR_MAP", mock_map)
 
-    client = TestClient(app)
+    client = TestClient(app, headers=AUTH_HEADERS)
     client.post("/api/v1/consent", json={
         "citizen_id": "CIT-9001",
         "service_type": "business_registration",

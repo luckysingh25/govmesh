@@ -54,7 +54,7 @@ Show how GovMesh federates heterogeneous government protocols into one unified r
 
 ### 5. Live Monitoring, Lineage & Unified Timeline
 1. Open **Systems & Depts** (`/systems`): displays live reachability and latency for all 4 microservices.
-2. Open **App Tracking** (`/tracking`): view the request's immutable `X-Correlation-ID`.
+2. Open **App Tracking** (`/tracking`): view the request's propagated `X-Correlation-ID`.
 3. Open **Audit Activity** (`/audit`): inspect field-level data lineage (e.g. `Identity DB.full_name` $\rightarrow$ `GovMesh Response.citizen.name`).
 4. Click on any application to view the chronological **Unified Timeline** combining audit events and workflow step transitions.
 
@@ -76,5 +76,5 @@ Show how GovMesh federates heterogeneous government protocols into one unified r
 
 - **Concurrency**: Connector queries run in parallel via `asyncio.gather` with batched database transactions.
 - **Graceful Degradation**: Microservice failure isolates the step without halting the entire platform or generating hallucinated citizen records.
-- **Data Sovereignty**: PostgreSQL stores workflow orchestration, consent, mapping, and audit metadata—not permanent centralized copies of departmental databases.
-- **Security**: Strict role-based access control (RBAC), bcrypt-hashed passwords, and isolated demo endpoints.
+- **Stored snapshots**: PostgreSQL stores bounded normalized execution snapshots and synthetic raw payload evidence with workflow, consent, mapping, lineage, and audit metadata. This prototype does not yet implement automated retention deletion.
+- **Security**: Role and ownership checks, PBKDF2-SHA256 password hashes, short-lived signed tokens, and explicitly enabled demo controls.

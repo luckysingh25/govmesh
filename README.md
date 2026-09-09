@@ -1,6 +1,6 @@
 # GovMesh — Unified Interoperable Government Service Platform
 
-GovMesh (SIH 26129) is a federated digital interoperability platform for government-to-citizen services. It coordinates dynamic consent gates, multi-protocol legacy system adapters (REST, SOAP/XML, Async Jobs), deterministic advisory intelligence, immutable audit trails, and automated schema evolution.
+GovMesh (SIH 26129) is a synthetic interoperability prototype for government-to-citizen service demonstrations. It coordinates dynamic consent gates, multi-protocol adapters (REST, SOAP/XML, Async Jobs), deterministic advisory rules, application-managed append-only audit records, and one constrained Property schema-recovery example.
 
 ---
 
@@ -49,11 +49,11 @@ GovMesh (SIH 26129) is a federated digital interoperability platform for governm
 
 4. **Interoperability Intelligence & Schema Evolution** (`/intelligence`):
    - Ingests and versions external department schemas (`v1` $\rightarrow$ `v2`).
-   - Automatic semantic field mapping suggestions with confidence scoring (`EXACT`, `SEMANTIC`, `TRANSFORMATION-REQUIRED`).
+   - Deterministic field-name mapping suggestions with heuristic match scores (`EXACT`, `SEMANTIC`, `TRANSFORMATION-REQUIRED`).
    - Human-in-the-loop governance: interactive **Pending** and **Approved** tabs for Data Stewards.
    - Breaking change impact analysis detecting renamed or removed fields across active services.
 
-5. **Unified Timeline & Immutable Audit Trail** (`/audit`, `/tracking`):
+5. **Unified Timeline & Application-Managed Append-Only Audit Trail** (`/audit`, `/tracking`):
    - End-to-end `X-Correlation-ID` tracing across all microservice hops.
    - Field-level data lineage recording exact mappings (`Identity DB.full_name` $\rightarrow$ `GovMesh Response.citizen.name`).
    - Chronological unified timeline linking system events, policy decisions, and workflow step results.

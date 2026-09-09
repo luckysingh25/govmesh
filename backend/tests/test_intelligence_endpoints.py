@@ -58,15 +58,23 @@ def test_schema_ingestion_requires_privileged_role():
 def test_demo_trigger_is_idempotent_and_disabled_in_production():
     app.dependency_overrides[get_db] = override_db
     original_environment = settings.environment
+    original_enabled = settings.demo_controls_enabled
+    original_key = settings.demo_control_key
     settings.environment = "test"
+    settings.demo_controls_enabled = True
+    settings.demo_control_key = "test-only-control-key"
     try:
-        assert client.post("/api/v1/intelligence/demo/trigger").status_code == 200
-        assert client.post("/api/v1/intelligence/demo/trigger").status_code == 200
+        token = token_for("data_steward", "demo-steward@govmesh.com")
+        headers = {"Authorization": f"Bearer {token}"}
+        assert client.post("/api/v1/intelligence/demo/trigger", headers=headers).status_code == 200
+        assert client.post("/api/v1/intelligence/demo/trigger", headers=headers).status_code == 200
         with Session() as db:
             count = db.query(SystemSchema).filter_by(system_name="Property System").count()
         assert count == 2
 
         settings.environment = "production"
-        assert client.post("/api/v1/intelligence/demo/trigger").status_code == 404
+        assert client.post("/api/v1/intelligence/demo/trigger", headers=headers).status_code == 404
     finally:
         settings.environment = original_environment
+        settings.demo_controls_enabled = original_enabled
+        settings.demo_control_key = original_key

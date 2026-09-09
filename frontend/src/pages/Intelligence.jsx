@@ -4,6 +4,7 @@ import { StatusBadge } from '../components/ui/StatusBadge';
 import {
   fetchSchemas, fetchSuggestions, approveSuggestion,
   rejectSuggestion, fetchImpactAnalysis, triggerDemoScenario
+  , setPropertySchema, setPropertyAvailability
 } from '../services/api';
 import { BrainCircuit, Play, Check, X, AlertTriangle, Layers, GitMerge } from 'lucide-react';
 
@@ -61,6 +62,11 @@ export const Intelligence = () => {
     } finally {
       setDemoLoading(false);
     }
+  };
+
+  const control = async (action, success) => {
+    setDemoLoading(true);
+    try { await action(); showToast(success); } catch (e) { showToast(e.message); } finally { setDemoLoading(false); }
   };
 
   const handleApprove = async (id) => {
@@ -122,6 +128,15 @@ export const Intelligence = () => {
           Trigger Upgrade Demo
         </button>
       </div>
+      <Card title="Authorized synthetic Property controls">
+        <p className="text-sm text-muted mb-4">These controls change the real local Property service response. They are unavailable unless demo mode is explicitly enabled.</p>
+        <div className="flex gap-2">
+          <button className="btn btn-outline" onClick={() => control(() => setPropertySchema(1), 'Property now emits schema v1')}>Use schema v1</button>
+          <button className="btn btn-outline" onClick={() => control(() => setPropertySchema(2), 'Property now emits schema v2')}>Use schema v2</button>
+          <button className="btn btn-outline" onClick={() => control(() => setPropertyAvailability(false), 'Property service fault enabled')}>Simulate unavailable</button>
+          <button className="btn btn-outline" onClick={() => control(() => setPropertyAvailability(true), 'Property service recovered')}>Recover service</button>
+        </div>
+      </Card>
 
       {toastMessage && (
         <div style={{
@@ -181,7 +196,7 @@ export const Intelligence = () => {
                     
                     <div className="flex items-center justify-between mt-4">
                       <div className="text-xs">
-                        Confidence: <strong className={sug.confidence_score > 0.8 ? 'text-success' : 'text-warning'}>
+                        Heuristic match score: <strong className={sug.confidence_score > 0.8 ? 'text-success' : 'text-warning'}>
                           {(sug.confidence_score * 100).toFixed(0)}%
                         </strong>
                       </div>
@@ -227,7 +242,8 @@ export const Intelligence = () => {
                       </span>
                     </div>
                     <div className="text-xs text-muted mt-2">
-                      Confidence: <strong>{(sug.confidence_score * 100).toFixed(0)}%</strong> • Type: <span className="font-mono">{sug.mapping_type}</span>
+                      Heuristic match score: <strong>{(sug.confidence_score * 100).toFixed(0)}%</strong> • Type: <span className="font-mono">{sug.mapping_type}</span><br />
+                      Mapping version: <strong>v{sug.mapping_version}</strong> • Reviewed by: <strong>{sug.reviewed_by}</strong>
                     </div>
                   </div>
                 ))

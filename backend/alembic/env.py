@@ -9,7 +9,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from app.core.config import settings
-from app.db.session import Base, _get_connect_args
+from app.db.session import Base
 from app.models.service_request import ServiceRequest
 from app.models.consent import CitizenConsent
 from app.models.policy_decision import PolicyDecision
@@ -22,7 +22,15 @@ from app.models.data_lineage import DataLineage
 from app.models.intelligence import SystemSchema, SchemaField, MappingSuggestion, ImpactAnalysis
 
 config = context.config
-unpooled_url = settings.database_url_unpooled or os.environ.get("DATABASE_URL_UNPOOLED") or settings.database_url
+# Explicit process configuration must win over values loaded from backend/.env.
+# This keeps disposable migration checks isolated when DATABASE_URL is
+# overridden by CI or a local verification command.
+unpooled_url = (
+    os.environ.get("DATABASE_URL_UNPOOLED")
+    or os.environ.get("DATABASE_URL")
+    or settings.database_url_unpooled
+    or settings.database_url
+)
 config.set_main_option("sqlalchemy.url", unpooled_url)
 
 if config.config_file_name:
@@ -46,7 +54,6 @@ def run_migrations_online() -> None:
         config.get_section(config.config_ini_section, {}),
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
-        connect_args=_get_connect_args(unpooled_url),
     )
     with connectable.connect() as connection:
         context.configure(

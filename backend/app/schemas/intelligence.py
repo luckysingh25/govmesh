@@ -31,6 +31,9 @@ class MappingSuggestionResponse(BaseModel):
     mapping_type: str
     status: str
     created_at: datetime
+    reviewed_by: Optional[str] = None
+    reviewed_at: Optional[datetime] = None
+    mapping_version: Optional[int] = None
     source_field: Optional[SchemaFieldResponse] = None
     model_config = ConfigDict(from_attributes=True)
 

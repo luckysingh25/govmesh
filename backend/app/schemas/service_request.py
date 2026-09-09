@@ -21,6 +21,15 @@ class DepartmentResponse(BaseModel):
     status: str
     data: Optional[Dict[str, Any]] = None
     error: Optional[str] = None
+    protocol: Optional[str] = None
+    raw_response: Optional[str] = None
+    source_mapping: Optional[Dict[str, str]] = None
+    normalized_output: Optional[Dict[str, Any]] = None
+    duration_ms: Optional[int] = None
+    correlation_id: Optional[str] = None
+    schema_version: Optional[int] = None
+    mapping_version: Optional[int] = None
+    external_job_id: Optional[str] = None
 
 class CitizenInfo(BaseModel):
     citizen_id: str

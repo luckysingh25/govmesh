@@ -2,22 +2,25 @@ import React, { useState, useEffect } from 'react';
 import { Card } from '../components/ui/Card';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { Activity, Users, CheckCircle, Clock } from 'lucide-react';
-import { fetchServiceRequests, fetchSystemsMonitoring } from '../services/api';
+import { fetchRequestMetrics, fetchServiceRequests, fetchSystemsMonitoring } from '../services/api';
 
 export const Dashboard = () => {
   const [requests, setRequests] = useState([]);
   const [systems, setSystems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [metrics, setMetrics] = useState(null);
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [reqs, sys] = await Promise.all([
+        const [reqs, sys, aggregate] = await Promise.all([
           fetchServiceRequests(),
-          fetchSystemsMonitoring()
+          fetchSystemsMonitoring(),
+          fetchRequestMetrics()
         ]);
         setRequests(reqs);
         setSystems(sys);
+        setMetrics(aggregate);
       } catch (e) {
         console.error("Failed to load dashboard data", e);
       } finally {
@@ -32,17 +35,17 @@ export const Dashboard = () => {
 
   const today = new Date().toDateString();
   const todaysRequests = requests.filter(r => new Date(r.created_at).toDateString() === today);
-  const totalRequests = todaysRequests.length;
+  const totalRequests = metrics?.total_requests ?? todaysRequests.length;
   const completedRequests = todaysRequests.filter(r => r.status === 'completed' || r.status === 'success');
-  const completionRate = totalRequests > 0 ? Math.round((completedRequests.length / totalRequests) * 100) : 0;
+  const completionRate = metrics?.completion_rate ?? (totalRequests > 0 ? Math.round((completedRequests.length / totalRequests) * 100) : 0);
   
   const durations = completedRequests.map(r => r.duration_ms).filter(Number.isFinite);
-  const avgTimeStr = durations.length
+  const avgTimeStr = metrics?.average_duration_ms != null ? `${(metrics.average_duration_ms / 1000).toFixed(2)}s` : durations.length
     ? `${(durations.reduce((sum, value) => sum + value, 0) / durations.length / 1000).toFixed(2)}s`
     : 'Not available';
 
   // Active citizens: unique citizen IDs
-  const activeCitizens = new Set(todaysRequests.map(r => r.citizen_id)).size;
+  const activeCitizens = metrics?.active_citizens ?? new Set(todaysRequests.map(r => r.citizen_id)).size;
   return (
     <div className="flex-col gap-6 flex fade-in">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -83,6 +86,7 @@ export const Dashboard = () => {
           </div>
         </Card>
       </div>
+      <p className="text-xs text-muted">Metrics scope: {metrics?.scope || 'loading'} · period: today. Recent activity remains capped separately for display.</p>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-4">
         <Card title="Recent Activity" className="lg:col-span-2">

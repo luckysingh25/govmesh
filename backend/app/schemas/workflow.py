@@ -2,7 +2,7 @@
 
 from datetime import datetime
 from typing import Optional, List, Any, Dict
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class WorkflowStartRequest(BaseModel):
@@ -23,6 +23,14 @@ class WorkflowStepStatus(BaseModel):
     completed_at: Optional[datetime] = None
     next_retry_at: Optional[datetime] = None
     duration_ms: Optional[int] = None
+    protocol: Optional[str] = None
+    raw_response: Optional[str] = None
+    source_mapping: Optional[Dict[str, str]] = None
+    normalized_output: Optional[Dict[str, Any]] = None
+    correlation_id: Optional[str] = None
+    schema_version: Optional[int] = None
+    mapping_version: Optional[int] = None
+    external_job_id: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -36,6 +44,7 @@ class WorkflowStatusResponse(BaseModel):
     status: str
     current_step_index: int
     steps: List[WorkflowStepStatus]
+    insights: List[Dict[str, Any]] = Field(default_factory=list)
     created_at: datetime
     updated_at: datetime
     completed_at: Optional[datetime] = None

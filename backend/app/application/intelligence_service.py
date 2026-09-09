@@ -1,5 +1,6 @@
 import re
 import logging
+from datetime import datetime, timezone
 from typing import Dict, Any, List, Optional
 from sqlalchemy.orm import Session
 from app.models.intelligence import SystemSchema, SchemaField, MappingSuggestion, ImpactAnalysis
@@ -17,6 +18,7 @@ TARGET_FIELDS = [
     "property.owner_name",
     "property.address",
 ]
+TARGET_FIELD_ALLOWLIST = frozenset(TARGET_FIELDS)
 
 def normalize_string(name: str) -> str:
     """Convert camelCase, PascalCase, or kebab-case to snake_case."""
@@ -116,7 +118,7 @@ class IntelligenceService:
             
             # Very basic hardcoded semantic rules for the demo scenario
             if "owner" in field.normalized_name and "name" in field.normalized_name:
-                best_target = "citizen.name"
+                best_target = "property.owner_name"
                 best_score = 0.95
             elif "address" in field.normalized_name:
                 best_target = "citizen.address"
@@ -200,16 +202,46 @@ class IntelligenceService:
         db.add(impact)
         db.commit()
 
-    def approve_suggestion(self, db: Session, suggestion_id: int):
+    def approve_suggestion(self, db: Session, suggestion_id: int, actor: str = "system-test"):
         sug = db.query(MappingSuggestion).filter_by(id=suggestion_id).first()
         if sug:
+            if sug.target_field not in TARGET_FIELD_ALLOWLIST:
+                raise ValueError("Mapping target is not an allowed canonical field")
+            if "owner" in sug.source_field.normalized_name and sug.target_field != "property.owner_name":
+                raise ValueError("Property owner names must map to property.owner_name")
+            current_version = max(
+                (row.mapping_version or 0 for row in db.query(MappingSuggestion).filter_by(status="approved").all()),
+                default=0,
+            )
             sug.status = "approved"
+            sug.reviewed_by = actor
+            sug.reviewed_at = datetime.now(timezone.utc)
+            sug.mapping_version = current_version + 1
             db.commit()
         return sug
 
-    def reject_suggestion(self, db: Session, suggestion_id: int):
+    def reject_suggestion(self, db: Session, suggestion_id: int, actor: str = "system-test"):
         sug = db.query(MappingSuggestion).filter_by(id=suggestion_id).first()
         if sug:
             sug.status = "rejected"
+            sug.reviewed_by = actor
+            sug.reviewed_at = datetime.now(timezone.utc)
             db.commit()
         return sug
+
+    def active_property_mapping(self, db: Session) -> tuple[dict[str, str], int | None]:
+        rows = (
+            db.query(MappingSuggestion)
+            .join(SchemaField)
+            .join(SystemSchema)
+            .filter(
+                SystemSchema.system_name == "Property System",
+                SystemSchema.status == "active",
+                MappingSuggestion.status == "approved",
+            )
+            .order_by(MappingSuggestion.mapping_version.desc())
+            .all()
+        )
+        mapping = {row.source_field.field_name: row.target_field for row in rows}
+        version = max((row.mapping_version or 0 for row in rows), default=0) or None
+        return mapping, version

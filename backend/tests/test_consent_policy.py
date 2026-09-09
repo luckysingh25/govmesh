@@ -15,6 +15,7 @@ from app.connectors.base import ConnectorResult
 from app.db.session import Base, get_db
 from app.models.workflow import WorkflowDefinition
 from app.main import app
+from tests.auth_helpers import admin_headers
 
 
 # ---------------------------------------------------------------------------
@@ -28,6 +29,7 @@ test_engine = create_engine(
 )
 TestSession = sessionmaker(bind=test_engine)
 Base.metadata.create_all(test_engine)
+AUTH_HEADERS = admin_headers(TestSession)
 
 
 def override_db():
@@ -61,7 +63,7 @@ async def successful_departments(_self, db, citizen_id, request_id):
 
 def test_grant_consent_returns_record():
     app.dependency_overrides[get_db] = override_db
-    client = TestClient(app)
+    client = TestClient(app, headers=AUTH_HEADERS)
 
     resp = client.post("/api/v1/consent", json={
         "citizen_id": "CIT-1001",
@@ -78,7 +80,7 @@ def test_grant_consent_returns_record():
 
 def test_get_active_consent():
     app.dependency_overrides[get_db] = override_db
-    client = TestClient(app)
+    client = TestClient(app, headers=AUTH_HEADERS)
 
     # Grant first
     client.post("/api/v1/consent", json={
@@ -95,7 +97,7 @@ def test_get_active_consent():
 
 def test_get_active_consent_returns_404_when_none():
     app.dependency_overrides[get_db] = override_db
-    client = TestClient(app)
+    client = TestClient(app, headers=AUTH_HEADERS)
 
     resp = client.get("/api/v1/consent/NOONE/business_registration")
     assert resp.status_code == 404
@@ -104,7 +106,7 @@ def test_get_active_consent_returns_404_when_none():
 
 def test_revoke_consent():
     app.dependency_overrides[get_db] = override_db
-    client = TestClient(app)
+    client = TestClient(app, headers=AUTH_HEADERS)
 
     grant = client.post("/api/v1/consent", json={
         "citizen_id": "CIT-3001",
@@ -131,7 +133,7 @@ def test_service_request_denied_without_consent(monkeypatch):
     """A service-request without prior consent should be denied."""
     app.dependency_overrides[get_db] = override_db
     monkeypatch.setattr(ServiceRequestService, "fetch_department_results", successful_departments)
-    client = TestClient(app)
+    client = TestClient(app, headers=AUTH_HEADERS)
 
     resp = client.post("/api/v1/service-requests", json={
         "citizen_id": "CIT-9002",
@@ -168,7 +170,7 @@ def test_service_request_allowed_with_consent(monkeypatch):
     }
     monkeypatch.setattr("app.application.workflow_engine.CONNECTOR_MAP", mock_map)
 
-    client = TestClient(app)
+    client = TestClient(app, headers=AUTH_HEADERS)
 
     # Grant consent
     client.post("/api/v1/consent", json={
@@ -195,7 +197,7 @@ def test_service_request_denied_after_revocation(monkeypatch):
     """Revoking consent should cause subsequent requests to be denied."""
     app.dependency_overrides[get_db] = override_db
     monkeypatch.setattr(ServiceRequestService, "fetch_department_results", successful_departments)
-    client = TestClient(app)
+    client = TestClient(app, headers=AUTH_HEADERS)
 
     # Grant
     grant = client.post("/api/v1/consent", json={
@@ -223,7 +225,7 @@ def test_partial_consent_is_denied(monkeypatch):
     """Consent that doesn't cover all four departments should be denied."""
     app.dependency_overrides[get_db] = override_db
     monkeypatch.setattr(ServiceRequestService, "fetch_department_results", successful_departments)
-    client = TestClient(app)
+    client = TestClient(app, headers=AUTH_HEADERS)
 
     # Grant consent for only 2 departments
     client.post("/api/v1/consent", json={

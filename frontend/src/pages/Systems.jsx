@@ -69,7 +69,7 @@ export const Systems = () => {
   return (
     <div className="flex-col gap-6 flex fade-in">
       <p className="text-muted max-w-3xl">
-        GovMesh connects to disparate legacy government systems, standardizing their diverse protocols (REST, SOAP, XML, legacy databases) into a unified internal data graph.
+        GovMesh connects to fictional departmental simulators and demonstrates protocol adaptation across REST, SOAP/XML, and asynchronous jobs. These are not live government integrations.
       </p>
       
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">

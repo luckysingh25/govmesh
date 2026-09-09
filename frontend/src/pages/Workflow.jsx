@@ -353,8 +353,8 @@ export const Workflow = () => {
       {!workflow && !loading && (
         <Card title="GovMesh Orchestration Pipeline">
           <p className="text-muted mb-6" style={{ maxWidth: 600 }}>
-            GovMesh orchestrates complex citizen requests across multiple legacy government systems
-            sequentially, with automatic retries and graceful failure handling.
+            GovMesh orchestrates synthetic citizen requests across multiple department simulators
+            sequentially, with explicit resume or targeted retry controls after a failure.
           </p>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
             {['Identity', 'Property', 'Municipality', 'Tax'].map((dept, idx) => (

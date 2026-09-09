@@ -12,6 +12,7 @@ from app.db.seed_workflows import seed_workflow_definitions
 from app.db.session import Base, get_db
 from app.main import app
 from app.models.workflow import WorkflowDefinition, WorkflowInstance
+from tests.auth_helpers import admin_headers
 
 
 @pytest.fixture
@@ -34,7 +35,7 @@ def client(session_factory):
             yield db
 
     app.dependency_overrides[get_db] = override_db
-    yield TestClient(app)
+    yield TestClient(app, headers=admin_headers(session_factory))
     app.dependency_overrides.clear()
 
 
@@ -141,7 +142,7 @@ def test_invalid_consent_inputs_are_rejected(client, payload):
     assert client.post("/api/v1/consent", json=payload).status_code == 422
 
 
-def test_repeated_active_consent_is_updated_not_duplicated(client, session_factory):
+def test_repeated_consent_preserves_history_and_replaces_active_grant(client, session_factory):
     payload = {
         "citizen_id": "CIT-9301", "service_type": "tax_clearance",
         "departments": ["identity", "tax"],
@@ -149,4 +150,9 @@ def test_repeated_active_consent_is_updated_not_duplicated(client, session_facto
     first = client.post("/api/v1/consent", json=payload)
     second = client.post("/api/v1/consent", json={**payload, "ttl_hours": 48})
     assert first.status_code == second.status_code == 201
-    assert first.json()["id"] == second.json()["id"]
+    assert first.json()["id"] != second.json()["id"]
+    with session_factory() as db:
+        from app.models.consent import CitizenConsent
+        rows = db.query(CitizenConsent).filter_by(citizen_id="CIT-9301", service_type="tax_clearance").all()
+        assert len(rows) == 2
+        assert sum(row.revoked_at is None for row in rows) == 1
