@@ -14,6 +14,7 @@ from unittest.mock import AsyncMock, patch, MagicMock
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
 
 from app.db.session import Base
 from app.models.service_request import ServiceRequest
@@ -23,8 +24,12 @@ from app.application.workflow_engine import WorkflowEngine
 
 # ── Shared test fixtures ──────────────────────────────────────────────
 
-TEST_DB_URL = "sqlite:///./test_workflow.db"
-engine = create_engine(TEST_DB_URL, connect_args={"check_same_thread": False})
+TEST_DB_URL = "sqlite://"
+engine = create_engine(
+    TEST_DB_URL,
+    connect_args={"check_same_thread": False},
+    poolclass=StaticPool,
+)
 TestSession = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
