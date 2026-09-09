@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     app_name: str = "govmesh-backend"
     environment: str = "development"
     database_url: str = "postgresql://govmesh:govmesh@localhost:5432/govmesh"
+    database_url_unpooled: str | None = None
     redis_url: str = "redis://localhost:6379/0"
     secret_key: str = "change-me-before-production"
     

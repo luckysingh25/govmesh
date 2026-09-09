@@ -22,7 +22,7 @@ from app.models.data_lineage import DataLineage
 from app.models.intelligence import SystemSchema, SchemaField, MappingSuggestion, ImpactAnalysis
 
 config = context.config
-unpooled_url = os.environ.get("DATABASE_URL_UNPOOLED") or settings.database_url
+unpooled_url = settings.database_url_unpooled or os.environ.get("DATABASE_URL_UNPOOLED") or settings.database_url
 config.set_main_option("sqlalchemy.url", unpooled_url)
 
 if config.config_file_name:
