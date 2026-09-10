@@ -135,4 +135,4 @@ async def test_tax_pending_is_explicit_and_has_no_invented_result():
     result = await connector.fetch_data("CIT-1008")
     await connector.close()
     assert result.status == "pending"
-    assert result.data == {"tax_status": "PENDING"}
+    assert result.data == {"tax_status": "PENDING", "job_id": "TAX-JOB-CIT-1008"}

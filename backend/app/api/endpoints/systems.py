@@ -8,13 +8,14 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.models.system import System
 from app.schemas.system import SystemResponse, SystemCreate
-from app.core.auth import require_roles
+from app.core.auth import require_roles, get_current_user
+from app.models.user import User
 
 router = APIRouter()
 
 @router.get("", response_model=List[SystemResponse])
 @router.get("/", response_model=List[SystemResponse], include_in_schema=False)
-def list_systems(db: Session = Depends(get_db)):
+def list_systems(db: Session = Depends(get_db), _current_user: User = Depends(get_current_user)):
     return db.query(System).all()
 
 @router.post("", response_model=SystemResponse, status_code=201)
@@ -36,7 +37,7 @@ def create_system(
     return new_system
 
 @router.get("/monitoring")
-async def get_monitoring():
+async def get_monitoring(_current_user: User = Depends(get_current_user)):
     from app.core.config import settings
 
     departments = (

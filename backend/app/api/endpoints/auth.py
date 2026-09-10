@@ -17,7 +17,7 @@ def login_for_access_token(db: Session = Depends(get_db), form_data: OAuth2Passw
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    access_token = create_access_token(data={"sub": user.email, "role": user.role})
+    access_token = create_access_token(data={"sub": user.email, "uid": user.id, "role": user.role})
     return {"access_token": access_token, "token_type": "bearer"}
 
 @router.post("/register", response_model=UserResponse, status_code=201)

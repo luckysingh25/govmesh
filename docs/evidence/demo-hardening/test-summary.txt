@@ -1,0 +1,43 @@
+GovMesh local verification — 2026-09-10
+========================================
+
+Environment
+  Local non-Docker stack
+  Isolated SQLite migration/test databases
+  Fictional demo users and synthetic department records
+
+Backend
+  Command: backend\.venv\Scripts\python.exe -m pytest -q --disable-warnings
+  Result: 100 passed, 275 warnings in 13.96s
+
+Frontend tests
+  Command: npm test -- --run
+  Result: 3 test files passed; 5 tests passed in 5.34s
+
+Frontend production build
+  Command: npm run build
+  Result: 2,196 modules transformed; build completed in 3.28s
+  Note: Vite emitted a non-failing chunking warning because api.js is imported
+        both statically and dynamically.
+
+Migration safety check
+  Command: DATABASE_URL=<isolated SQLite URL> python -m alembic upgrade head
+  Result: SQLiteImpl; fresh database reached a81f37c60d11 (head)
+  Note: the database URL is intentionally redacted.
+
+Local-stack smoke test
+  Frontend                http://127.0.0.1:3000  HTTP 200
+  Backend API             http://127.0.0.1:8000  HTTP 200
+  Identity simulator      http://127.0.0.1:8101  HTTP 200
+  Municipality simulator  http://127.0.0.1:8102  HTTP 200
+  Property simulator      http://127.0.0.1:8103  HTTP 200
+  Tax simulator           http://127.0.0.1:8104  HTTP 200
+
+Security/integration coverage includes
+  - legacy hard-coded token rejection and public privileged-role rejection
+  - ownership, role, consent, retry/resume, and demo-control boundaries
+  - zero connector calls after policy denial
+  - real REST, SOAP/XML, and persistent tax-job adapter paths
+  - v1 success, v2 incompatibility, approval, versioned mapping, and recovery
+  - timeout/unavailable/missing/malformed paths and targeted retry
+  - deterministic advisory ordering, input immutability, and refreshed insights

@@ -91,7 +91,7 @@ class ServiceRequestService:
         return normalized
 
     async def create(
-        self, *, db: Session, citizen_id: str, service_type: str, correlation_id: str
+        self, *, db: Session, citizen_id: str, service_type: str, correlation_id: str, actor: str | None = None
     ) -> ServiceRequestResponse:
         request_id = f"REQ-{uuid.uuid4().hex[:8].upper()}"
         record = ServiceRequest(
@@ -106,7 +106,7 @@ class ServiceRequestService:
         self._audit.log_event(
             db=db,
             event_type="Service Request Started",
-            actor=f"Citizen ({citizen_id})",
+            actor=actor or f"Citizen ({citizen_id})",
             target="GovMesh Core",
             detail=f"Initiated {service_type}",
             outcome="success",
@@ -196,7 +196,7 @@ class ServiceRequestService:
             actor="GovMesh Workflow Engine",
             target=f"Citizen ({citizen_id})",
             detail=f"Status: {record.status}",
-            outcome="success" if record.status == "completed" else "warning",
+            outcome="success" if record.status in {"success", "completed"} else "warning",
             correlation_id=correlation_id
         )
 
@@ -236,5 +236,14 @@ class ServiceRequestService:
                     status=step.status,
                     data=step.result_data if step.result_data else None,
                     error=step.error_message,
+                    protocol=step.protocol,
+                    raw_response=step.raw_response,
+                    source_mapping=step.source_mapping,
+                    normalized_output=step.normalized_output,
+                    duration_ms=step.duration_ms,
+                    correlation_id=step.correlation_id,
+                    schema_version=step.schema_version,
+                    mapping_version=step.mapping_version,
+                    external_job_id=step.external_job_id,
                 )
         return DepartmentResponse(status="not_required", data=None, error=None)

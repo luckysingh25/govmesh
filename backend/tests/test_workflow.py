@@ -272,3 +272,34 @@ async def test_workflow_completed(db, seed_definition, seed_service_request):
     sr = db.query(ServiceRequest).filter_by(request_id="REQ-TEST0001").first()
     assert sr.status == "success"
     assert sr.completed_at is not None
+
+
+@pytest.mark.asyncio
+async def test_resume_retries_only_the_failed_step(db, seed_definition, seed_service_request):
+    engine_instance = WorkflowEngine()
+    wf = engine_instance.start_workflow(db, "REQ-TEST0001", "CIT-1001")
+    for step in wf.steps:
+        step.attempt_count = 1
+        if step.step_name == "property":
+            step.status = "failed"
+            step.error_message = "controlled outage"
+        else:
+            step.status = "success"
+            step.result_data = {"preserved": step.step_name}
+    wf.status = "partially_completed"
+    wf.current_step_index = 3
+    db.commit()
+
+    property_fetch = AsyncMock(return_value=_success_result("property"))
+    property_factory = MagicMock(return_value=MagicMock(fetch_data=property_fetch, close=AsyncMock()))
+    with patch.dict("app.application.workflow_engine.CONNECTOR_MAP", {"property": property_factory}, clear=True):
+        await engine_instance.resume_or_retry(db, wf)
+
+    db.refresh(wf)
+    assert wf.status == "success"
+    assert property_fetch.await_count == 1
+    assert next(step for step in wf.steps if step.step_name == "property").attempt_count == 2
+    for step in wf.steps:
+        if step.step_name != "property":
+            assert step.attempt_count == 1
+            assert step.result_data == {"preserved": step.step_name}

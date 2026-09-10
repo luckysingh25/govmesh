@@ -21,7 +21,7 @@ def upgrade() -> None:
     sa.Column('citizen_id', sa.String(), nullable=False),
     sa.Column('service_type', sa.String(), nullable=False),
     sa.Column('departments', sa.JSON(), nullable=False),
-    sa.Column('granted_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.Column('granted_at', sa.DateTime(timezone=True), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=False),
     sa.Column('expires_at', sa.DateTime(timezone=True), nullable=False),
     sa.Column('revoked_at', sa.DateTime(timezone=True), nullable=True),
     sa.PrimaryKeyConstraint('id')
@@ -35,7 +35,7 @@ def upgrade() -> None:
     sa.Column('correlation_id', sa.String(), nullable=False),
     sa.Column('decision', sa.String(), nullable=False),
     sa.Column('reason', sa.String(), nullable=True),
-    sa.Column('decided_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.Column('decided_at', sa.DateTime(timezone=True), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=False),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_policy_decisions_citizen_id'), 'policy_decisions', ['citizen_id'], unique=False)

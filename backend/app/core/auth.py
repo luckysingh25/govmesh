@@ -42,18 +42,6 @@ def get_current_user(db: Session = Depends(get_db), token: str = Depends(oauth2_
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
-    if token == "demo-admin-token":
-        user = db.query(User).filter(User.role == "admin").first()
-        if not user:
-            user = User(
-                email="admin@govmesh.local",
-                hashed_password=get_password_hash("admin123"),
-                role="admin",
-            )
-            db.add(user)
-            db.commit()
-            db.refresh(user)
-        return user
     payload = verify_token(token)
     if payload is None:
         raise credentials_exception
@@ -65,6 +53,14 @@ def get_current_user(db: Session = Depends(get_db), token: str = Depends(oauth2_
     if user is None:
         raise credentials_exception
     return user
+
+
+def ensure_citizen_access(current_user: User, citizen_id: str) -> None:
+    """Enforce ownership for citizen-facing records without impersonation."""
+    if current_user.role in {"admin", "data_steward", "civic_employee"}:
+        return
+    if current_user.role != "citizen" or current_user.citizen_id != citizen_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Citizen record access denied")
 
 def require_roles(allowed_roles: List[str]):
     """Dependency generator to restrict endpoints to specific roles."""

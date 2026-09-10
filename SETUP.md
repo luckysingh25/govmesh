@@ -41,6 +41,26 @@ cp .env.example .env
 
 Edit `backend/.env` to configure your PostgreSQL connection string (`DATABASE_URL`).
 
+Authentication never creates users as a side effect. In development/demo only, create fictional accounts explicitly with a password supplied through a temporary environment variable:
+
+```powershell
+$env:GOVMESH_DEMO_PASSWORD = Read-Host -AsSecureString | ConvertFrom-SecureString -AsPlainText
+cd backend
+.\.venv\Scripts\python.exe -m app.cli create-demo-users --password-from-env GOVMESH_DEMO_PASSWORD
+Remove-Item Env:GOVMESH_DEMO_PASSWORD
+```
+
+To use the steward-only schema and failure controls, set an unpredictable local key before starting all processes. Both the backend and Property simulator inherit it; do not commit it or capture it in screenshots:
+
+```powershell
+$env:ENVIRONMENT = "demo"
+$env:DEMO_CONTROLS_ENABLED = "true"
+$env:DEMO_CONTROL_KEY = [guid]::NewGuid().ToString()
+.\start_all.ps1
+```
+
+Leave `DEMO_CONTROLS_ENABLED=false` for normal development and every non-demo environment.
+
 ---
 
 ## Database Migration & Initial Setup
@@ -221,7 +241,7 @@ npm run build
 
 ## Troubleshooting
 
-- **DNS Error on Neon Database**: GovMesh includes a built-in DNS-over-HTTPS (DoH) resolver in `session.py` that automatically resolves cloud hostnames if your local router's DNS fails.
+- **Database connection error**: Confirm that `DATABASE_URL` and, when used, `DATABASE_URL_UNPOOLED` point to an accessible database. GovMesh uses the operating system's standard DNS and database connection path.
 - **Port In Use (WinError 10048)**: Check what process is using the port with `Get-NetTCPConnection -LocalPort 8000` and stop duplicate uvicorn instances.
 - **Consent Denied**: Submit consent at `http://localhost:3000/consent` before initiating a service request for a citizen.
 - **Redis Connection**: Redis is non-blocking and optional in the synchronous workflow prototype; absence of a local Redis server will not halt request execution.

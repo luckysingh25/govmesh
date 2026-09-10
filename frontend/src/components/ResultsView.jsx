@@ -33,6 +33,21 @@ const DepartmentCard = ({ name, data, icon }) => {
           </p>
         )}
       </div>
+      {(data.raw_response || data.source_mapping) && <details className="inspection-panel">
+        <summary>How this result was produced</summary>
+        <div className="inspection-meta">
+          <span><strong>Protocol:</strong> {data.protocol || 'Unknown'}</span>
+          <span><strong>Actual duration:</strong> {data.duration_ms ?? 'Not measured'} ms</span>
+          <span><strong>Correlation ID:</strong> {data.correlation_id || 'Unavailable'}</span>
+          {data.external_job_id && <span><strong>Job ID:</strong> {data.external_job_id}</span>}
+          {data.schema_version && <span><strong>Schema:</strong> v{data.schema_version}</span>}
+          {data.mapping_version && <span><strong>Approved mapping:</strong> v{data.mapping_version}</span>}
+        </div>
+        <h4>Captured synthetic source response</h4><pre>{data.raw_response || 'No source payload retained.'}</pre>
+        <h4>Protocol adapter mapping</h4><pre>{JSON.stringify(data.source_mapping || {}, null, 2)}</pre>
+        <h4>Normalized output</h4><pre>{JSON.stringify(data.normalized_output || data.data || {}, null, 2)}</pre>
+        <small className="text-muted">Protocol adaptation is separate from advisory rule evaluation. Payloads are bounded and available only in this synthetic demo.</small>
+      </details>}
     </article>
   );
 };
@@ -67,11 +82,16 @@ const AdvisoryInsights = ({ insights = [] }) => (
   </section>
 );
 
-const ResultsView = ({ result }) => {
+const ResultsView = ({ result, onResume, resumeLoading }) => {
   if (!result) return null;
 
   const citizen = result.citizen || {};
   const overallStatus = humanize(result.overall_status);
+  const departmentResults = [result.identity, result.property, result.municipality, result.tax].filter(Boolean);
+  const taxIsPending = ['pending', 'processing', 'pending_external'].includes(result.tax?.status);
+  const hasRetryableFailure = departmentResults.some((department) =>
+    ['failed', 'error', 'unavailable', 'schema_incompatible'].includes(department.status)
+  );
 
   return (
     <div className="results-container fade-in">
@@ -97,6 +117,13 @@ const ResultsView = ({ result }) => {
       </section>
 
       <AdvisoryInsights insights={result.insights} />
+      {(taxIsPending || hasRetryableFailure) && (
+        <button className="btn btn-primary" onClick={onResume} disabled={resumeLoading}>
+          {resumeLoading
+            ? (taxIsPending ? 'Checking job…' : 'Retrying failed department…')
+            : (taxIsPending ? `Resume tax job ${result.tax.external_job_id || ''}` : 'Retry failed department')}
+        </button>
+      )}
 
       <div className="departments-grid">
         <DepartmentCard name="Identity" data={result.identity} icon="👤" />

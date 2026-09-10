@@ -1,9 +1,11 @@
 import React from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
-import { Bell, UserCircle } from 'lucide-react';
+import { Bell, UserCircle, LogOut } from 'lucide-react';
+import { useAuth } from '../../auth/AuthContext';
 
 export const MainLayout = () => {
+  const { user, logout } = useAuth();
   const location = useLocation();
   
   // Format pathname to title
@@ -26,7 +28,8 @@ export const MainLayout = () => {
             </button>
             <div className="flex items-center gap-2 text-sm text-muted">
               <UserCircle size={24} className="text-primary" />
-              <span>Admin User</span>
+              <span>{user?.email} · {user?.role}</span>
+              <button className="btn btn-outline" onClick={logout}><LogOut size={15} /> Logout</button>
             </div>
           </div>
         </header>

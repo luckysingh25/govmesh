@@ -38,7 +38,7 @@ def test_intelligence_schema_ingestion(db_session):
     # Check that ownerName normalized mapping suggestion is created
     suggestions = [f for f in schema.fields if f.field_name == "ownerName"][0].mappings
     assert len(suggestions) > 0
-    assert suggestions[0].target_field == "citizen.name"
+    assert suggestions[0].target_field == "property.owner_name"
 
 def test_intelligence_impact_analysis(db_session):
     service = IntelligenceService()

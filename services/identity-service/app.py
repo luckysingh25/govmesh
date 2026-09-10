@@ -2,7 +2,7 @@ from pathlib import Path
 import sys
 from typing import Literal
 
-from fastapi import FastAPI, Header, HTTPException
+from fastapi import FastAPI, Header, HTTPException, Response
 from pydantic import BaseModel
 
 SERVICES_ROOT = Path(__file__).resolve().parents[1]
@@ -29,9 +29,11 @@ def health():
 
 
 @app.get("/api/identity/{citizen_id}", response_model=IdentityData)
-def get_identity(citizen_id: str, authorization: str | None = Header(None)):
+def get_identity(citizen_id: str, response: Response, authorization: str | None = Header(None), x_correlation_id: str | None = Header(None)):
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Unauthorized")
+    if x_correlation_id:
+        response.headers["X-Correlation-ID"] = x_correlation_id
     record = RECORDS.get(citizen_id.upper())
     if record is None:
         raise HTTPException(status_code=404, detail="Citizen not found")

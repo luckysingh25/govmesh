@@ -67,13 +67,13 @@ def municipality_registration_missing(results: Mapping[str, ConnectorResult]) ->
 
 def tax_clearance_not_confirmed(results: Mapping[str, ConnectorResult]) -> IntelligenceInsight | None:
     tax = results.get("tax")
-    if tax is None or tax.status not in {"success", "pending"}:
+    if tax is None or tax.status not in {"success", "pending", "processing"}:
         return None
 
     tax_status = tax.data.get("tax_status")
     if _normalized(tax_status) == "cleared":
         return None
-    pending = tax.status == "pending" or _normalized(tax_status) == "pending"
+    pending = tax.status in {"pending", "processing"} or _normalized(tax_status) == "pending"
     displayed_status = repr(tax_status) if tax_status is not None else "missing"
     return IntelligenceInsight(
         rule_id="TAX_CLEARANCE_NOT_CONFIRMED",
@@ -133,7 +133,11 @@ def department_results_unavailable(results: Mapping[str, ConnectorResult]) -> In
     unavailable = [
         department
         for department in unavailable
-        if not (department == "tax" and results.get(department) and results[department].status == "pending")
+        if not (
+            department == "tax"
+            and results.get(department)
+            and results[department].status in {"pending", "processing"}
+        )
     ]
     if not unavailable:
         return None

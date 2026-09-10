@@ -8,6 +8,7 @@ status propagation back to the parent ServiceRequest.
 import asyncio
 import logging
 import math
+import time
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict, Type
 
@@ -21,6 +22,7 @@ from app.connectors.tax import TaxConnector
 from app.core.config import settings
 from app.models.service_request import ServiceRequest
 from app.models.workflow import WorkflowDefinition, WorkflowInstance, WorkflowStepInstance
+from app.application.intelligence_service import IntelligenceService
 
 logger = logging.getLogger(__name__)
 
@@ -83,6 +85,7 @@ class WorkflowEngine:
                 status="pending",
                 attempt_count=0,
                 max_retries=MAX_RETRIES,
+                correlation_id=(db.query(ServiceRequest).filter_by(request_id=service_request_id).first().correlation_id),
             )
             db.add(step)
 
@@ -129,13 +132,15 @@ class WorkflowEngine:
             self._advance_or_finish(db, workflow)
             return
 
-        connector = connector_cls()
+        connector = self._connector_for_step(db, step)
+        started = time.perf_counter()
         try:
-            result = await connector.fetch_data(workflow.citizen_id)
+            result = await connector.fetch_data(workflow.citizen_id, step.correlation_id)
         except Exception as exc:
             result = ConnectorResult(step.step_name, "failed", {}, str(exc))
         finally:
             await connector.close()
+        result.duration_ms = max(0, round((time.perf_counter() - started) * 1000))
 
         self._handle_step_result(db, step, workflow, result, allow_retry=allow_retry)
 
@@ -148,11 +153,10 @@ class WorkflowEngine:
             return
 
         workflow.status = "running"
-        now = datetime.now(timezone.utc)
         for s in workflow.steps:
             s.status = "running"
             s.attempt_count += 1
-            s.started_at = now
+            s.started_at = datetime.now(timezone.utc)
         db.commit()
 
         # Run connectors concurrently to reduce latency across network
@@ -160,36 +164,63 @@ class WorkflowEngine:
             connector_cls = CONNECTOR_MAP.get(step.step_name)
             if connector_cls is None:
                 return step, ConnectorResult(step.step_name, "failed", {}, f"No connector for department: {step.step_name}")
-            c = connector_cls()
+            c = self._connector_for_step(db, step)
+            started = time.perf_counter()
             try:
-                result = await c.fetch_data(workflow.citizen_id)
-                return step, result
+                result = await c.fetch_data(workflow.citizen_id, step.correlation_id)
+                result.duration_ms = max(0, round((time.perf_counter() - started) * 1000))
+                return step, result, datetime.now(timezone.utc)
             except Exception as exc:
-                return step, ConnectorResult(step.step_name, "failed", {}, str(exc))
+                result = ConnectorResult(step.step_name, "failed", {}, str(exc))
+                result.duration_ms = max(0, round((time.perf_counter() - started) * 1000))
+                return step, result, datetime.now(timezone.utc)
             finally:
                 await c.close()
 
         step_tasks = [_run_step_connector(step) for step in workflow.steps]
         step_outcomes = await asyncio.gather(*step_tasks, return_exceptions=True)
 
-        comp_time = datetime.now(timezone.utc)
         for outcome in step_outcomes:
             if isinstance(outcome, Exception):
                 logger.error("step_execution_exception %s", outcome)
                 continue
-            step, result = outcome
-            step.completed_at = comp_time
-            if result.status == "success":
-                step.status = "success"
-                step.result_data = result.data
-                step.error_message = None
-            else:
-                step.status = result.status
-                step.error_message = result.error or "Unknown error"
-                step.result_data = result.data if result.data else None
+            step, result, completed_at = outcome
+            step.completed_at = completed_at
+            self._apply_result_to_step(step, result)
 
         workflow.current_step_index = max(0, len(workflow.steps) - 1)
         self._finalize_workflow(db, workflow, list(workflow.steps))
+
+    async def resume_pending_tax(self, db: Session, workflow: WorkflowInstance) -> WorkflowInstance:
+        """Resume only the persisted tax job; successful steps are never repeated."""
+        step = next((item for item in workflow.steps if item.step_name == "tax" and item.status in {"pending", "processing"}), None)
+        if step is None or not step.external_job_id:
+            return workflow
+        connector = TaxConnector()
+        started = time.perf_counter()
+        try:
+            result = await connector.resume_job(step.external_job_id, step.correlation_id)
+        finally:
+            await connector.close()
+        result.duration_ms = max(0, round((time.perf_counter() - started) * 1000))
+        step.attempt_count += 1
+        step.started_at = datetime.now(timezone.utc)
+        step.completed_at = datetime.now(timezone.utc)
+        self._apply_result_to_step(step, result)
+        self._finalize_workflow(db, workflow, list(workflow.steps))
+        db.refresh(workflow)
+        return workflow
+
+    async def resume_or_retry(self, db: Session, workflow: WorkflowInstance) -> WorkflowInstance:
+        """Resume pending async work or retry one failed department without replaying successes."""
+        pending_tax = next((item for item in workflow.steps if item.step_name == "tax" and item.status in {"pending", "processing"}), None)
+        if pending_tax:
+            return await self.resume_pending_tax(db, workflow)
+        retryable = next((item for item in workflow.steps if item.status in {"failed", "timeout", "unavailable", "invalid_response", "schema_incompatible"} and item.attempt_count < item.max_retries), None)
+        if retryable:
+            await self.execute_step(db, retryable.id, allow_retry=False)
+            db.refresh(workflow)
+        return workflow
 
     # ── Retry logic ────────────────────────────────────────────────────
 
@@ -238,16 +269,12 @@ class WorkflowEngine:
         """Process the connector result — update step, decide retry or advance."""
         step.completed_at = datetime.now(timezone.utc)
 
+        self._apply_result_to_step(step, result)
+
         if result.status == "success":
-            step.status = "success"
-            step.result_data = result.data
-            step.error_message = None
             db.commit()
             self._advance_or_finish(db, workflow)
         else:
-            step.status = result.status
-            step.error_message = result.error or "Unknown error"
-            step.result_data = result.data if result.data else None
             db.commit()
 
             # Attempt retry
@@ -277,14 +304,17 @@ class WorkflowEngine:
         successes = sum(1 for s in steps if s.status == "success")
         now = datetime.now(timezone.utc)
 
-        if successes == len(steps):
+        has_pending = any(s.status in {"pending", "processing"} for s in steps)
+        if has_pending:
+            workflow.status = "pending_external"
+        elif successes == len(steps):
             workflow.status = "success"
         elif successes > 0:
             workflow.status = "partially_completed"
         else:
             workflow.status = "failed"
 
-        workflow.completed_at = now
+        workflow.completed_at = None if has_pending else now
         db.commit()
 
         # Update the parent ServiceRequest
@@ -295,10 +325,36 @@ class WorkflowEngine:
         )
         if sr:
             sr.status = workflow.status
-            sr.completed_at = now
+            sr.completed_at = None if has_pending else now
             db.commit()
 
         logger.info(
             "workflow_finalized workflow_id=%s status=%s successes=%s/%s",
             workflow.workflow_id, workflow.status, successes, len(steps),
         )
+
+    @staticmethod
+    def _apply_result_to_step(step: WorkflowStepInstance, result: ConnectorResult) -> None:
+        step.status = result.status
+        step.result_data = result.data or None
+        step.normalized_output = result.data or None
+        step.error_message = result.error
+        step.protocol = result.protocol
+        raw_inspection_enabled = (
+            settings.demo_controls_enabled
+            and settings.environment.casefold() in {"development", "demo", "test"}
+        )
+        step.raw_response = result.raw_response if raw_inspection_enabled else None
+        step.source_mapping = result.source_mapping
+        step.duration_ms = result.duration_ms
+        step.schema_version = result.schema_version
+        step.mapping_version = result.mapping_version
+        step.external_job_id = result.external_job_id
+
+    @staticmethod
+    def _connector_for_step(db: Session, step: WorkflowStepInstance) -> BaseConnector:
+        connector_cls = CONNECTOR_MAP[step.step_name]
+        if step.step_name == "property" and connector_cls is PropertyConnector:
+            mapping, version = IntelligenceService().active_property_mapping(db)
+            return PropertyConnector(approved_mapping=mapping, mapping_version=version)
+        return connector_cls()

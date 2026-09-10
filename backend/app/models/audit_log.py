@@ -3,7 +3,7 @@ from sqlalchemy.sql import func
 from app.db.session import Base
 
 class AuditLog(Base):
-    """Immutable audit trail for security and policy events."""
+    """Persisted audit record; append-only behavior is enforced by application design."""
     __tablename__ = "audit_logs"
 
     id = Column(Integer, primary_key=True, index=True)

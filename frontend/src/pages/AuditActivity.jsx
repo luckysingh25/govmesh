@@ -31,7 +31,7 @@ export const AuditActivity = () => {
     <div className="flex-col gap-6 flex fade-in">
       <Card title="Security & Audit Logs">
         <p className="text-muted mb-6 max-w-3xl">
-          Immutable audit trail of all policy decisions, consent modifications, and system access events.
+          Persisted, append-only-by-application-design records of policy decisions, consent modifications, mapping reviews, and system access events.
         </p>
 
         <div className="table-container">

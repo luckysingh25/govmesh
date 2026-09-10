@@ -139,6 +139,15 @@ def test_pending_tax_has_one_specific_info_advisory():
     ]
 
 
+def test_processing_tax_has_only_the_specific_non_terminal_advisory():
+    results = healthy_results()
+    results[3] = ConnectorResult("tax", "processing", {"tax_status": "PENDING"})
+
+    assert [(item.rule_id, item.severity) for item in generate_insights(results)] == [
+        ("TAX_CLEARANCE_NOT_CONFIRMED", "info")
+    ]
+
+
 def test_missing_identity_does_not_create_duplicate_identity_advisory():
     results = healthy_results()[1:]
 

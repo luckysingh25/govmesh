@@ -1,8 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
 
-const ServiceRequestForm = ({ onSubmit, isLoading }) => {
-  const [citizenId, setCitizenId] = useState('CIT-1001');
-  const [serviceType, setServiceType] = useState('business_registration');
+const ServiceRequestForm = ({ onSubmit, isLoading, citizenId, setCitizenId, serviceType, setServiceType, definitions = [] }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -38,9 +36,7 @@ const ServiceRequestForm = ({ onSubmit, isLoading }) => {
             required
             disabled={isLoading}
           >
-            <option value="business_registration">Business Registration</option>
-            <option value="property_transfer">Property Transfer</option>
-            <option value="tax_clearance">Tax Clearance Certificate</option>
+            {definitions.map(item => <option key={item.id} value={item.id}>{item.label}</option>)}
           </select>
         </div>
         
@@ -50,7 +46,7 @@ const ServiceRequestForm = ({ onSubmit, isLoading }) => {
               <span className="spinner"></span> Processing...
             </span>
           ) : (
-            'Process Request'
+            'Execute Actual Request'
           )}
         </button>
       </form>

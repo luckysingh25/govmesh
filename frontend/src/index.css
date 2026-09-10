@@ -506,4 +506,17 @@ body {
   .results-header, .advisory-heading { flex-direction: column; }
   .citizen-grid { grid-template-columns: 1fr; }
 }
+.login-shell { min-height: 100vh; display: grid; place-items: center; padding: 2rem; }
+.login-card { width: min(440px, 100%); display: flex; flex-direction: column; gap: 1rem; padding: 2rem; border: 1px solid var(--border); border-radius: 16px; background: var(--panel-bg); box-shadow: var(--glass-shadow); }
+.login-logo { font-size: 1.5rem; margin-bottom: .5rem; }
+.scenario-box { margin-top: 1rem; padding: 1rem; border-left: 3px solid var(--accent); background: rgba(59,130,246,.1); border-radius: 8px; }
+.scenario-box p { margin: .5rem 0; }
+.scope-list { display: flex; flex-direction: column; gap: .6rem; list-style: none; margin: 1rem 0; }
+.scope-list li { display: grid; grid-template-columns: 8rem 1fr; gap: .75rem; padding: .75rem; background: rgba(15,23,42,.55); border-radius: 8px; }
+.scope-list span { color: var(--text-secondary); font-size: .85rem; }
+.inspection-panel { margin-top: 1rem; border-top: 1px solid var(--border); padding-top: 1rem; }
+.inspection-panel summary { cursor: pointer; color: #93c5fd; font-weight: 600; }
+.inspection-panel h4 { margin: 1rem 0 .4rem; font-size: .8rem; color: var(--text-secondary); }
+.inspection-panel pre { max-height: 220px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; padding: .75rem; border-radius: 8px; background: #07101f; color: #cbd5e1; font-size: .72rem; }
+.inspection-meta { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: .75rem; font-size: .75rem; color: var(--text-secondary); }
 

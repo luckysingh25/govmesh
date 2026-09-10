@@ -7,17 +7,20 @@ from app.models.workflow import WorkflowInstance
 from app.application.audit_service import AuditService
 from app.application.data_lineage_service import DataLineageService
 from app.schemas.workflow import WorkflowTimelineResponse, TimelineEntry
+from app.core.auth import get_current_user, ensure_citizen_access
+from app.models.user import User
 
 router = APIRouter()
 audit_service = AuditService()
 lineage_service = DataLineageService()
 
 @router.get("/{request_id}")
-def get_unified_timeline(request_id: str, db: Session = Depends(get_db)):
+def get_unified_timeline(request_id: str, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """Retrieve a unified timeline combining workflow steps, audit logs, and data lineage."""
     sr = db.query(ServiceRequest).filter_by(request_id=request_id).first()
     if sr is None:
         raise HTTPException(status_code=404, detail="Service request not found")
+    ensure_citizen_access(current_user, sr.citizen_id)
 
     correlation_id = sr.correlation_id
 
