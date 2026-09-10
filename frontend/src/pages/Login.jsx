@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
 import { Navigate } from 'react-router-dom';
+import { Moon, Sun } from 'lucide-react';
 import { useAuth } from '../auth/AuthContext';
+import { useTheme } from '../theme/ThemeContext';
 
 export const Login = () => {
   const { user, login } = useAuth();
+  const { isLight, toggleTheme } = useTheme();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -13,7 +16,18 @@ export const Login = () => {
     event.preventDefault(); setLoading(true); setError('');
     try { await login(email, password); } catch (err) { setError(err.message); } finally { setLoading(false); }
   };
-  return <div className="login-shell"><form className="login-card" onSubmit={submit}>
+  return <div className="login-shell">
+    <button
+      type="button"
+      className="btn btn-outline theme-toggle login-theme-toggle"
+      onClick={toggleTheme}
+      aria-label={`Switch to ${isLight ? 'dark' : 'light'} mode`}
+      title={`Switch to ${isLight ? 'dark' : 'light'} mode`}
+    >
+      {isLight ? <Moon size={18} /> : <Sun size={18} />}
+      <span>{isLight ? 'Dark' : 'Light'}</span>
+    </button>
+    <form className="login-card" onSubmit={submit}>
     <div className="logo login-logo">🏛️ GovMesh</div>
     <h1>Secure demo sign in</h1>
     <p className="text-muted">Use a fictional account created with the development-only CLI command.</p>
@@ -24,5 +38,6 @@ export const Login = () => {
     {error && <div className="error-text">{error}</div>}
     <button className="btn btn-primary w-full" disabled={loading}>{loading ? 'Signing in…' : 'Sign in'}</button>
     <small className="text-muted">No privileged account is created by authentication. Demo data is fictional.</small>
-  </form></div>;
+    </form>
+  </div>;
 };
