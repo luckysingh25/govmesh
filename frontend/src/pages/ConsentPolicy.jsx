@@ -8,7 +8,7 @@ import { useAuth } from '../auth/AuthContext';
 
 export const ConsentPolicy = () => {
   const { user } = useAuth();
-  const [citizenId] = useState(user?.citizen_id || '');
+  const [citizenId, setCitizenId] = useState(user?.citizen_id || '');
   const [serviceType, setServiceType] = useState('business_registration');
   const [consent, setConsent] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -77,8 +77,10 @@ export const ConsentPolicy = () => {
             <input
               id="consent-citizen"
               className="form-input" 
-              value={citizenId} 
-              readOnly
+              value={citizenId}
+              onChange={e => setCitizenId(e.target.value)}
+              readOnly={Boolean(user?.citizen_id)}
+              placeholder="e.g. CIT-1001"
             />
           </div>
           <div className="form-group mb-0">
