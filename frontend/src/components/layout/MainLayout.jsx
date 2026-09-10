@@ -1,11 +1,13 @@
 import React from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
-import { Bell, UserCircle, LogOut } from 'lucide-react';
+import { Bell, UserCircle, LogOut, Moon, Sun } from 'lucide-react';
 import { useAuth } from '../../auth/AuthContext';
+import { useTheme } from '../../theme/ThemeContext';
 
 export const MainLayout = () => {
   const { user, logout } = useAuth();
+  const { isLight, toggleTheme } = useTheme();
   const location = useLocation();
   
   // Format pathname to title
@@ -23,8 +25,17 @@ export const MainLayout = () => {
         <header className="topbar">
           <h1 className="page-title">{title}</h1>
           <div className="topbar-actions">
-            <button className="btn btn-outline" style={{ padding: '0.5rem', borderRadius: '50%' }}>
+            <button className="btn btn-outline icon-button" aria-label="Notifications" title="Notifications">
               <Bell size={20} />
+            </button>
+            <button
+              className="btn btn-outline theme-toggle"
+              onClick={toggleTheme}
+              aria-label={`Switch to ${isLight ? 'dark' : 'light'} mode`}
+              title={`Switch to ${isLight ? 'dark' : 'light'} mode`}
+            >
+              {isLight ? <Moon size={18} /> : <Sun size={18} />}
+              <span>{isLight ? 'Dark' : 'Light'}</span>
             </button>
             <div className="flex items-center gap-2 text-sm text-muted">
               <UserCircle size={24} className="text-primary" />

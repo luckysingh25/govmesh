@@ -191,7 +191,7 @@ export const AppTracking = () => {
                     </tr>
                     {expandedRow === app.request_id && app.workflow_id && (
                       <tr>
-                        <td colSpan={7} style={{ background: 'rgba(15,23,42,0.4)', borderTop: 'none' }}>
+                        <td colSpan={7} style={{ background: 'var(--surface-subtle)', borderTop: 'none' }}>
                           <WorkflowTimeline requestId={app.request_id} />
                         </td>
                       </tr>

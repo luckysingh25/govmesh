@@ -141,8 +141,8 @@ export const Intelligence = () => {
       {toastMessage && (
         <div style={{
           padding: '0.75rem 1rem',
-          background: 'rgba(56, 189, 248, 0.15)',
-          border: '1px solid rgba(56, 189, 248, 0.4)',
+          background: 'var(--accent-soft)',
+          border: '1px solid var(--accent-border)',
           borderRadius: 8,
           color: 'var(--text-primary)',
           fontSize: '0.875rem',
@@ -181,7 +181,7 @@ export const Intelligence = () => {
                 <p className="text-muted text-sm text-center py-4">No pending suggestions. All mappings are reviewed!</p>
               ) : (
                 suggestions.map(sug => (
-                  <div key={sug.id} style={{ padding: '1rem', background: 'rgba(15,23,42,0.4)', borderRadius: 8, border: '1px solid var(--border)' }}>
+                  <div key={sug.id} style={{ padding: '1rem', background: 'var(--surface-subtle)', borderRadius: 8, border: '1px solid var(--border)' }}>
                     <div className="flex justify-between items-start mb-3">
                       <div>
                         <div className="text-xs text-muted mb-1 font-mono">ID: {sug.source_field_id}</div>
