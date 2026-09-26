@@ -47,12 +47,12 @@ def approve_suggestion(
 ):
     """Human approval of a suggested mapping."""
     try:
-        sug = intel_service.approve_suggestion(db, suggestion_id, actor=current_user.email)
+        sug = intel_service.approve_suggestion(db, suggestion_id, actor=str(current_user.email))
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     if not sug:
         raise HTTPException(status_code=404, detail="Suggestion not found")
-    AuditService().log_event(db=db, event_type="Mapping Approved", actor=current_user.email, target=f"mapping:{sug.id}", detail=f"mapping_version={sug.mapping_version}; target={sug.target_field}", outcome="approved")
+    AuditService().log_event(db=db, event_type="Mapping Approved", actor=str(current_user.email), target=f"mapping:{sug.id}", detail=f"mapping_version={sug.mapping_version}; target={sug.target_field}", outcome="approved")
     return sug
 
 @router.post("/suggestions/{suggestion_id}/reject", response_model=MappingSuggestionResponse)
@@ -62,10 +62,10 @@ def reject_suggestion(
     current_user: User = Depends(require_roles(["admin", "data_steward"])),
 ):
     """Human rejection of a suggested mapping."""
-    sug = intel_service.reject_suggestion(db, suggestion_id, actor=current_user.email)
+    sug = intel_service.reject_suggestion(db, suggestion_id, actor=str(current_user.email))
     if not sug:
         raise HTTPException(status_code=404, detail="Suggestion not found")
-    AuditService().log_event(db=db, event_type="Mapping Rejected", actor=current_user.email, target=f"mapping:{sug.id}", detail=f"target={sug.target_field}", outcome="rejected")
+    AuditService().log_event(db=db, event_type="Mapping Rejected", actor=str(current_user.email), target=f"mapping:{sug.id}", detail=f"target={sug.target_field}", outcome="rejected")
     return sug
 
 @router.get("/impact", response_model=List[ImpactAnalysisResponse])
@@ -115,16 +115,24 @@ def trigger_demo_scenario(db: Session = Depends(get_db), _current_user: User = D
         intel_service.ingest_schema(db, "Property System", v2_schema)
     elif max(schema.version for schema in existing) == 1:
         intel_service.ingest_schema(db, "Property System", v2_schema)
+    else:
+        # Re-activate pending suggestions so the evaluator can re-run approval demo
+        pending = db.query(MappingSuggestion).filter_by(status="pending").first()
+        if not pending:
+            for s in db.query(MappingSuggestion).all():
+                setattr(s, "status", "pending")
+            db.commit()
 
     return {"message": "Demo scenario is ready.", "versions": 2}
 
 
 async def _property_control(path: str) -> dict:
     _require_demo_controls()
+    key: str = str(settings.demo_control_key or "")
     async with httpx.AsyncClient(timeout=3.0) as client:
         response = await client.put(
             f"{settings.property_url.rstrip('/')}{path}",
-            headers={"X-Demo-Control-Key": settings.demo_control_key},
+            headers={"X-Demo-Control-Key": key},
         )
     if not response.is_success:
         raise HTTPException(status_code=502, detail="Synthetic Property control rejected the request")
@@ -146,10 +154,11 @@ async def set_property_availability(available: bool, _current_user: User = Depen
 @router.post("/demo/reset")
 async def reset_demo(db: Session = Depends(get_db), _current_user: User = Depends(require_roles(["admin", "data_steward"]))):
     _require_demo_controls()
+    key: str = str(settings.demo_control_key or "")
     async with httpx.AsyncClient(timeout=3.0) as client:
         response = await client.post(
             f"{settings.property_url.rstrip('/')}/demo/reset",
-            headers={"X-Demo-Control-Key": settings.demo_control_key},
+            headers={"X-Demo-Control-Key": key},
         )
     if not response.is_success:
         raise HTTPException(status_code=502, detail="Synthetic Property reset failed")

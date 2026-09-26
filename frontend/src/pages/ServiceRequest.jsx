@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
+import { useLocation } from 'react-router-dom';
 import ServiceRequestForm from '../components/ServiceRequestForm';
 import ResultsView from '../components/ResultsView';
 import { fetchDemoScenarios, fetchServiceDefinitions, resumeWorkflow, submitServiceRequest } from '../services/api';
@@ -8,6 +9,7 @@ import { useAuth } from '../auth/AuthContext';
 
 export const ServiceRequest = () => {
   const { user } = useAuth();
+  const location = useLocation();
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
@@ -17,34 +19,60 @@ export const ServiceRequest = () => {
   const [citizenId, setCitizenId] = useState(user?.citizen_id || 'CIT-1001');
   const [serviceType, setServiceType] = useState('business_registration');
   const [resumeLoading, setResumeLoading] = useState(false);
+  const [evaluatorNote, setEvaluatorNote] = useState('');
 
-  useEffect(() => {
-    Promise.all([fetchServiceDefinitions(), fetchDemoScenarios()]).then(([defs, demos]) => {
-      setDefinitions(defs); setScenarios(demos);
-      if (defs.length) setServiceType(defs[0].id);
-    }).catch(err => setError(err.message));
-  }, []);
-
-  const scenario = useMemo(() => scenarios.find(item => item.scenario_name === scenarioName), [scenarios, scenarioName]);
-  const chooseScenario = (name) => {
-    setScenarioName(name); setResult(null); setError(null);
-    const chosen = scenarios.find(item => item.scenario_name === name);
-    if (chosen?.selectable) { setCitizenId(chosen.citizen_id); setServiceType(chosen.service_type); }
-  };
-
-  const handleRequestSubmit = async (citizenId, serviceType) => {
+  const handleRequestSubmit = useCallback(async (targetCitizenId, targetServiceType) => {
     setIsLoading(true);
     setError(null);
     setResult(null);
     
     try {
-      const data = await submitServiceRequest(citizenId, serviceType);
+      const data = await submitServiceRequest(targetCitizenId, targetServiceType);
       setResult(data);
     } catch (err) {
       setError(err.message);
     } finally {
       setIsLoading(false);
     }
+  }, []);
+
+  useEffect(() => {
+    Promise.all([fetchServiceDefinitions(), fetchDemoScenarios()]).then(([defs, demos]) => {
+      setDefinitions(defs); 
+      setScenarios(demos);
+      if (defs.length && !serviceType) {
+        setServiceType(defs[0].id);
+      }
+    }).catch(err => setError(err.message));
+  }, []);
+
+  // Listen to query parameters whenever location.search changes
+  useEffect(() => {
+    if (!location.search) return;
+
+    const params = new URLSearchParams(location.search);
+    const qCitizen = params.get('citizen');
+    const qService = params.get('service');
+    const qScenario = params.get('scenario');
+    const qNote = params.get('evaluatorNote');
+    const qAutoSubmit = params.get('autoSubmit') === 'true';
+
+    if (qCitizen) setCitizenId(qCitizen);
+    if (qService) setServiceType(qService);
+    if (qScenario) setScenarioName(qScenario);
+    if (qNote) setEvaluatorNote(qNote);
+
+    if (qAutoSubmit && qCitizen) {
+      const resolvedService = qService || serviceType || 'business_registration';
+      handleRequestSubmit(qCitizen, resolvedService);
+    }
+  }, [location.search, handleRequestSubmit]);
+
+  const scenario = useMemo(() => scenarios.find(item => item.scenario_name === scenarioName), [scenarios, scenarioName]);
+  const chooseScenario = (name) => {
+    setScenarioName(name); setResult(null); setError(null); setEvaluatorNote('');
+    const chosen = scenarios.find(item => item.scenario_name === name);
+    if (chosen?.selectable) { setCitizenId(chosen.citizen_id); setServiceType(chosen.service_type); }
   };
 
   const handleResume = async () => {
@@ -64,6 +92,14 @@ export const ServiceRequest = () => {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start fade-in">
       <div className="flex-col gap-6 flex">
+        {evaluatorNote && (
+          <div className="evaluator-callout-banner fade-in">
+            <div className="evaluator-callout-header">
+              <span className="evaluator-badge">SIH 2026 EVALUATOR CONTEXT</span>
+            </div>
+            <p className="evaluator-callout-text">{evaluatorNote}</p>
+          </div>
+        )}
         <Card title="Fictional demo scenario">
           <label className="form-label" htmlFor="scenario">Scenario selector</label>
           <select id="scenario" className="form-select" value={scenarioName} onChange={e => chooseScenario(e.target.value)}>

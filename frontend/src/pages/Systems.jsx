@@ -6,7 +6,7 @@ const SystemCard = ({ name, type, icon: Icon, status, uptime, latency, protocol 
   <Card className="hover:border-accent/50 transition-colors">
     <div className="flex justify-between items-start mb-4">
       <div className="flex items-center gap-3">
-        <div className={`p-2 rounded-lg bg-slate-800 ${status === 'Online' ? 'text-emerald-400' : 'text-amber-400'}`}>
+        <div className={`p-2 rounded-lg ${status === 'Online' ? 'text-emerald-400' : 'text-amber-400'}`} style={{ background: 'var(--surface-subtle)', border: '1px solid var(--border)' }}>
           <Icon size={20} />
         </div>
         <div>
@@ -17,20 +17,20 @@ const SystemCard = ({ name, type, icon: Icon, status, uptime, latency, protocol 
       <div className={`w-3 h-3 rounded-full ${status === 'Online' ? 'bg-emerald-500' : 'bg-amber-500'}`}></div>
     </div>
     
-    <div className="grid grid-cols-2 gap-4 mt-6">
-      <div>
+    <div className="grid grid-cols-2 gap-3 mt-5">
+      <div className="p-3 rounded-lg" style={{ background: 'var(--surface-subtle)', border: '1px solid var(--border)' }}>
         <div className="text-xs text-muted uppercase tracking-wider mb-1">Status</div>
         <div className={`font-medium ${status === 'Online' ? 'text-success' : 'text-warning'}`}>{status}</div>
       </div>
-      <div>
+      <div className="p-3 rounded-lg" style={{ background: 'var(--surface-subtle)', border: '1px solid var(--border)' }}>
         <div className="text-xs text-muted uppercase tracking-wider mb-1">Protocol</div>
         <div className="font-mono text-sm">{protocol}</div>
       </div>
-      <div>
+      <div className="p-3 rounded-lg" style={{ background: 'var(--surface-subtle)', border: '1px solid var(--border)' }}>
         <div className="text-xs text-muted uppercase tracking-wider mb-1">Uptime</div>
         <div className="font-medium">{uptime}</div>
       </div>
-      <div>
+      <div className="p-3 rounded-lg" style={{ background: 'var(--surface-subtle)', border: '1px solid var(--border)' }}>
         <div className="text-xs text-muted uppercase tracking-wider mb-1">Latency</div>
         <div className="font-mono text-sm">{latency}</div>
       </div>

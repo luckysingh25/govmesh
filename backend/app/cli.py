@@ -8,8 +8,15 @@ import os
 
 from app.core.auth import get_password_hash
 from app.core.config import settings
-from app.db.session import SessionLocal
+from app.db.session import SessionLocal, Base, engine
 from app.models.user import User
+import app.models.consent
+import app.models.service_request
+import app.models.workflow
+import app.models.audit_log
+import app.models.data_lineage
+import app.models.intelligence
+import app.models.system
 
 
 DEMO_USERS = (
@@ -28,6 +35,10 @@ def create_demo_users(password_env: str) -> None:
     password = os.environ.get(password_env)
     if not password or len(password) < 12:
         raise SystemExit(f"Set {password_env} to a password of at least 12 characters")
+    
+    # Ensure tables exist
+    Base.metadata.create_all(bind=engine)
+
     with SessionLocal() as db:
         for email, role, citizen_id in DEMO_USERS:
             user = db.query(User).filter_by(email=email).first()

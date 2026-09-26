@@ -20,8 +20,8 @@ class Settings(BaseSettings):
     tax_url: str = "http://localhost:8104"
     cors_origins: str = "http://localhost:3000,http://localhost:5173"
     workflow_execution_mode: Literal["sync"] = "sync"
-    demo_controls_enabled: bool = False
-    demo_control_key: str | None = None
+    demo_controls_enabled: bool = True
+    demo_control_key: str | None = "govmesh-demo-control-2026"
     execution_payload_limit_bytes: int = 16_384
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")

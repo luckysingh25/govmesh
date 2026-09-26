@@ -115,7 +115,7 @@ export const Intelligence = () => {
       <div className="flex justify-between items-center mb-2">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2 mb-2">
-            <BrainCircuit className="text-accent" /> Interoperability Intelligence
+            <BrainCircuit className="text-accent" /> Schema Intelligence &amp; Governance
           </h1>
           <p className="text-muted">Rule-based schema versioning, field mapping suggestions, and impact analysis.</p>
         </div>
@@ -130,7 +130,7 @@ export const Intelligence = () => {
       </div>
       <Card title="Authorized synthetic Property controls">
         <p className="text-sm text-muted mb-4">These controls change the real local Property service response. They are unavailable unless demo mode is explicitly enabled.</p>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2.5">
           <button className="btn btn-outline" onClick={() => control(() => setPropertySchema(1), 'Property now emits schema v1')}>Use schema v1</button>
           <button className="btn btn-outline" onClick={() => control(() => setPropertySchema(2), 'Property now emits schema v2')}>Use schema v2</button>
           <button className="btn btn-outline" onClick={() => control(() => setPropertyAvailability(false), 'Property service fault enabled')}>Simulate unavailable</button>
@@ -268,7 +268,7 @@ export const Intelligence = () => {
                   <p className="text-sm mb-3">{imp.analysis_result?.impact_summary}</p>
                   
                   {imp.analysis_result?.affected_workflows?.map((wf, idx) => (
-                    <div key={idx} className="text-xs p-2 mt-2 rounded bg-slate-800/50">
+                    <div key={idx} className="text-xs p-2 mt-2 rounded" style={{ background: 'var(--surface-subtle)', border: '1px solid var(--border)' }}>
                       <strong>Affected:</strong> {wf.workflow} ({wf.step})<br/>
                       <span className="text-muted">{wf.detail}</span>
                     </div>

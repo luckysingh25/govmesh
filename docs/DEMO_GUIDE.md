@@ -1,5 +1,7 @@
 # GovMesh Deterministic Demo Guide
 
+> 🏆 **Jury Members & Evaluators:** For a complete, step-by-step scoring flow with 1-click test procedures, see the **[SIH 2026 Judges & Evaluator Testing Guide](../JUDGES_TESTING_GUIDE.md)**.
+
 ## Before the Demo
 
 1. Start all services using either:
@@ -10,13 +12,21 @@
 
 ---
 
-## Recommended Presentation Sequence
+## ⚡ Fast-Track Evaluator 1-Click Demo Hub
 
-### 1. Consent Policy Gate
-1. Navigate to **Service Request** (`/service-request`).
-2. Submit a request for `CIT-1001` *before* granting consent.
-3. Show that the policy gate immediately returns a clean denial without contacting any external department.
-4. Go to **Consent & Policy** (`/consent`), grant consent for `CIT-1001` on `business_registration`, and resubmit.
+In the web interface (`http://localhost:3000`), a dedicated **Evaluator Demo Hub** banner is pinned to the top of every screen. Evaluators and jury members can run complete, deterministic live verification scenarios with a single click:
+
+| Preset Button | Scenario Tested | What Evaluators See |
+| :--- | :--- | :--- |
+| 🟢 **Golden Path (`CIT-1001`)** | Asha Verma — Full Success | All 4 departments (REST, SOAP, Async) respond concurrently; clean advisory score; 100% verified status. |
+| 🔴 **Zero-Trust Denial** | Consent Gate Enforcement | Immediate `403 Forbidden` response without contacting any external departmental server. Zero network leaks. |
+| 🟡 **Graceful Degradation (`CIT-1003`)** | Omar Das — Missing Property | Property service returns absent; gateway returns clean partial result with explainable advisory `DEPARTMENT_RESULTS_UNAVAILABLE`. **Zero fake data generation.** |
+| 🟠 **Name Conflict (`CIT-1006`)** | Kabir Jain — Discrepancy | Cross-system discrepancy detected between Identity (`Kabir Jain`) and Property (`Kabir A. Jain`). Triggers deterministic advisory code `CROSS_SYSTEM_NAME_MISMATCH`. |
+| 🟣 **Schema Evolution (v1 $\rightarrow$ v2)** | Breaking Upstream Change | Simulates Property System field rename (`ownerName` $\rightarrow$ `propertyOwnerName`). Interactive Data Steward panel for real-time review and approval. |
+
+---
+
+## Detailed Step-by-Step Walkthrough
 
 ---
 

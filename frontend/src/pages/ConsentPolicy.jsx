@@ -97,14 +97,21 @@ export const ConsentPolicy = () => {
 
         {error && <div className="error-text mb-4">{error}</div>}
 
-        <div className="p-4 border border-glass-border rounded-lg bg-slate-900/50">
+        <div className="p-4 rounded-lg" style={{ background: 'var(--surface-subtle)', border: '1px solid var(--border)' }}>
           <h4 className="font-semibold mb-4 flex items-center gap-2">
             <Shield size={18} /> Active Policy Rule
           </h4>
           <p className="text-sm text-muted mb-4">
             <strong>{selectedDefinition?.label || serviceType}</strong> requires only the following departments:
           </p>
-          <ul className="scope-list">{selectedDefinition?.departments.map(item => <li key={item.id}><strong>{item.id}</strong><span>{item.reason}</span></li>)}</ul>
+          <ul className="scope-list">
+            {selectedDefinition?.departments.map((item) => (
+              <li key={item.id} className="scope-item">
+                <span className="scope-dept-tag">{item.id.toUpperCase()}</span>
+                <span className="scope-reason">{item.reason}</span>
+              </li>
+            ))}
+          </ul>
           <p className="text-xs text-muted mb-4">Expiry preview: {new Date(Date.now() + ttlHours * 3600000).toLocaleString()}</p>
           
           <div className="flex gap-4">
@@ -137,7 +144,7 @@ export const ConsentPolicy = () => {
                 <p className="text-muted mb-6 max-w-sm">
                   Citizen has granted access to their data for this service type.
                 </p>
-                <div className="text-left bg-slate-900/80 p-4 rounded-lg w-full text-sm font-mono text-muted overflow-auto">
+                <div className="text-left p-4 rounded-lg w-full text-sm font-mono overflow-auto" style={{ background: 'var(--code-bg)', color: 'var(--code-text)', border: '1px solid var(--border)' }}>
                   <pre>{JSON.stringify(consent, null, 2)}</pre>
                 </div>
               </>

@@ -23,18 +23,33 @@ Use short points, diagrams, and infographics. Avoid paragraphs. Save the finishe
 
 **GovMesh: Consent-Aware Interoperability for Government Services**
 
-### Fill the template fields from the SIH portal
+### Official SIH Template Fields
 
-- Problem Statement ID: SIH26129
-- Problem Statement Title: Copy the exact portal wording
-- Theme: Copy the exact portal wording
-- PS Category: Software
-- Team ID: Copy the exact portal ID
-- Team Name: Copy the registered portal name
+- **Problem Statement ID:** SIH26129
+- **Problem Statement Title:** System integration and interoperability among government digital platforms, resulting in fragmented service delivery
+- **Theme:** Smart Automation
+- **PS Category:** Software
+- **Team Name:** The Code Blooded
 
-### Optional subtitle
+### Team Members Details:
+
+| Name | Role | Stream | Academic Year | Gender |
+| :--- | :--- | :--- | :--- | :--- |
+| **Lucky Singh Panwar** | Team Leader | B.Tech CSE | 4th Year (Batch 2023) | Male |
+| **Harikesh Kumar** | Team Member 1 | B.Tech CSE | 4th Year (Batch 2023) | Male |
+| **Aman Singh Kunwar** | Team Member 2 | B.Tech CSE | 3rd Year (Batch 2024) | Male |
+| **Abhishek Kumar Gupta** | Team Member 3 | B.Tech CSE | 3rd Year (Batch 2024) | Male |
+| **Arushi Saxena** | Team Member 4 | B.Tech CSE | 3rd Year (Batch 2024) | Female |
+| **Harshita Rai** | Team Member 5 | B.Tech CSE (AI/ML) | 2nd Year (Batch 2025) | Female |
+
+*(Gender Diversity: 4 Male, 2 Female — fully complies with SIH guidelines).*
+
+### Subtitle & Callout Links:
 
 Connecting heterogeneous departmental systems through secure adapters, governed data exchange, and schema intelligence.
+
+* **Live Demo Video (2.5 mins):** `[Clickable YouTube Link]`
+* **Source Code (88 Pytests):** `[Clickable GitHub Link]`
 
 ### Visual direction
 

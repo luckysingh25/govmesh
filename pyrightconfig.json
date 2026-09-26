@@ -1,17 +1,21 @@
 {
   "venvPath": "backend",
   "venv": "venv",
+  "pythonPlatform": "Windows",
   "pythonVersion": "3.12",
   "extraPaths": [
     "backend",
-    "backend/venv/lib/python3.12/site-packages"
+    "services",
+    "backend/venv/Lib/site-packages",
+    "d:/govmesh/backend/venv/Lib/site-packages"
   ],
   "executionEnvironments": [
     {
       "root": "backend",
       "extraPaths": [
         ".",
-        "venv/lib/python3.12/site-packages"
+        "venv/Lib/site-packages",
+        "d:/govmesh/backend/venv/Lib/site-packages"
       ]
     }
   ]
