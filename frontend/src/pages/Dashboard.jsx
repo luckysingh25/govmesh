@@ -128,7 +128,7 @@ export const Dashboard = () => {
               <div className="text-center py-4 text-muted">No systems registered.</div>
             ) : (
               systems.map(sys => (
-                <div key={sys.name} className="flex items-center justify-between p-3 rounded-lg bg-slate-800/50 border border-slate-700/50">
+                <div key={sys.name} className="flex items-center justify-between p-3 rounded-lg" style={{ background: 'var(--surface-subtle)', border: '1px solid var(--border)' }}>
                   <div>
                     <div className="font-medium">{sys.name}</div>
                     <div className="text-xs text-muted">Uptime: {sys.uptime_percent == null ? 'Not measured' : `${sys.uptime_percent}%`}</div>

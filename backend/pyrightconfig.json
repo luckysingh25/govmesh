@@ -1,9 +1,11 @@
 {
   "venvPath": ".",
   "venv": "venv",
+  "pythonPlatform": "Windows",
   "pythonVersion": "3.12",
   "extraPaths": [
     ".",
-    "venv/lib/python3.12/site-packages"
+    "venv/Lib/site-packages",
+    "d:/govmesh/backend/venv/Lib/site-packages"
   ]
 }

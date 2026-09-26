@@ -125,6 +125,35 @@ const ResultsView = ({ result, onResume, resumeLoading }) => {
         </button>
       )}
 
+      <div className="protocol-mesh-strip">
+        <div className="protocol-mesh-header">
+          <span className="protocol-title">⚡ Multi-Protocol Federation Mesh</span>
+          <span className="protocol-meta">Heterogeneous Adapters Active · Concurrency: asyncio.gather</span>
+        </div>
+        <div className="protocol-chips-grid">
+          <div className="protocol-chip">
+            <span className="protocol-badge badge-rest">REST / Bearer</span>
+            <span className="protocol-name">Identity Gateway</span>
+            <span className="protocol-detail">Port 8101 · JSON</span>
+          </div>
+          <div className="protocol-chip">
+            <span className="protocol-badge badge-soap">SOAP 1.2 / XML</span>
+            <span className="protocol-name">Property Registry</span>
+            <span className="protocol-detail">Port 8103 · Envelope Parser</span>
+          </div>
+          <div className="protocol-chip">
+            <span className="protocol-badge badge-rest">REST / API-Key</span>
+            <span className="protocol-name">Municipality Svc</span>
+            <span className="protocol-detail">Port 8102 · JSON</span>
+          </div>
+          <div className="protocol-chip">
+            <span className="protocol-badge badge-async">Async 2-Phase</span>
+            <span className="protocol-name">Tax Clearance</span>
+            <span className="protocol-detail">Port 8104 · Job Polling</span>
+          </div>
+        </div>
+      </div>
+
       <div className="departments-grid">
         <DepartmentCard name="Identity" data={result.identity} icon="👤" />
         <DepartmentCard name="Property" data={result.property} icon="🏠" />

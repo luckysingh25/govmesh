@@ -50,7 +50,7 @@ export const Health = () => {
                 <span className="text-muted text-sm">Response Time</span>
                 <span className="font-mono">{health.database.response_time_ms} ms</span>
               </div>
-              <div className="w-full bg-slate-800 rounded-full h-2">
+              <div className="w-full rounded-full h-2" style={{ background: 'var(--surface-subtle)', border: '1px solid var(--border)' }}>
                 <div className="bg-blue-500 h-2 rounded-full" style={{ width: `${Math.min(100, health.database.response_time_ms)}%` }}></div>
               </div>
             </div>
@@ -65,7 +65,7 @@ export const Health = () => {
                 <span className="text-muted text-sm">Response Time</span>
                 <span className="font-mono">{health.redis.response_time_ms} ms</span>
               </div>
-              <div className="w-full bg-slate-800 rounded-full h-2">
+              <div className="w-full rounded-full h-2" style={{ background: 'var(--surface-subtle)', border: '1px solid var(--border)' }}>
                 <div className="bg-red-500 h-2 rounded-full" style={{ width: `${Math.min(100, health.redis.response_time_ms)}%` }}></div>
               </div>
             </div>
@@ -74,7 +74,7 @@ export const Health = () => {
       </div>
       
       <Card title="Raw Diagnostics">
-        <pre className="bg-slate-900/80 p-4 rounded-lg w-full text-sm font-mono text-muted overflow-auto">
+        <pre className="p-4 rounded-lg w-full text-sm font-mono overflow-auto" style={{ background: 'var(--code-bg)', color: 'var(--code-text)', border: '1px solid var(--border)' }}>
           {JSON.stringify(health, null, 2)}
         </pre>
       </Card>

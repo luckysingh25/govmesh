@@ -85,19 +85,26 @@ app.include_router(intelligence.router, prefix="/api/v1/intelligence", tags=["in
 
 @app.on_event("startup")
 async def startup_seed():
-    """Seed workflow definitions asynchronously in background on application startup."""
+    """Ensure all database tables exist and seed workflow definitions on application startup."""
     import asyncio
-    from app.db.session import SessionLocal
+    from app.db.session import SessionLocal, Base, engine
+    import app.models  # Ensure all models are registered on Base.metadata
     from app.db.seed_workflows import seed_workflow_definitions
+    from app.db.seed_users import seed_demo_users
 
     def _seed():
+        db = None
         try:
+            # Auto-create all tables if missing (e.g. SQLite or fresh DB)
+            Base.metadata.create_all(bind=engine)
             db = SessionLocal()
             seed_workflow_definitions(db)
+            seed_demo_users(db)
         except Exception as exc:
-            logger.warning("workflow_seed_failed error=%s", exc)
+            logger.warning("db_startup_init_failed error=%s", exc)
         finally:
-            db.close()
+            if db is not None:
+                db.close()
 
     asyncio.create_task(asyncio.to_thread(_seed))
 

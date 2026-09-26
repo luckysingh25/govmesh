@@ -31,8 +31,9 @@ DEMO_STATE = {"schema_version": 1, "available": True}
 
 
 def require_demo_control(key: str | None) -> None:
-    expected = os.environ.get("DEMO_CONTROL_KEY")
-    if os.environ.get("DEMO_CONTROLS_ENABLED", "false").casefold() != "true" or not expected or key != expected:
+    expected = os.environ.get("DEMO_CONTROL_KEY", "govmesh-demo-control-2026")
+    enabled = os.environ.get("DEMO_CONTROLS_ENABLED", "true")
+    if enabled.casefold() != "true" or not expected or key != expected:
         raise HTTPException(status_code=404, detail="Not found")
 
 

@@ -17,6 +17,9 @@ if (-not (Test-Path $python)) {
 
 Write-Host "Using Python interpreter: $python" -ForegroundColor DarkCyan
 
+$env:DEMO_CONTROLS_ENABLED = "true"
+$env:DEMO_CONTROL_KEY = "govmesh-demo-control-2026"
+
 # 1. Identity Service (Port 8101)
 Write-Host "[1/6] Launching Identity Service on Port 8101..." -ForegroundColor Green
 Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$root\services\identity-service'; & '$python' -m uvicorn app:app --reload --port 8101"
