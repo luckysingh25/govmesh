@@ -11,6 +11,9 @@ permissions:
 jobs:
   backend:
     runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: "sqlite:///./govmesh.db"
+      SECRET_KEY: "govmesh-ci-test-key-32-bytes-long!"
     defaults:
       run:
         working-directory: backend

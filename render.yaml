@@ -1,0 +1,37 @@
+services:
+  # GovMesh Backend API Gateway & Federated Microservices
+  - type: web
+    name: govmesh-backend
+    env: python
+    region: ohio
+    plan: free
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: bash start_render.sh
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ENVIRONMENT
+        value: production
+      - key: CORS_ORIGINS
+        value: "*"
+      - key: DEMO_CONTROLS_ENABLED
+        value: "true"
+      - key: DEMO_CONTROL_KEY
+        value: "govmesh-demo-control-2026"
+
+  # GovMesh Frontend Web Application
+  - type: static
+    name: govmesh-frontend
+    env: node
+    plan: free
+    buildCommand: cd frontend && npm install && npm run build
+    staticPublishPath: ./frontend/dist
+    envVars:
+      - key: VITE_API_BASE_URL
+        value: https://govmesh-backend.onrender.com/api/v1
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

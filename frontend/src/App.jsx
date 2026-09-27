@@ -17,30 +17,38 @@ import { AuthProvider, useAuth } from './auth/AuthContext';
 
 import './index.css';
 
-const Protected = ({ children }) => {
+import { AccessDenied } from './components/common/AccessDenied';
+
+const Protected = ({ children, allowedRoles }) => {
   const { user, loading } = useAuth();
   if (loading) return <div className="empty-state">Checking secure session…</div>;
-  return user ? children : <Navigate to="/login" replace />;
+  if (!user) return <Navigate to="/login" replace />;
+  if (allowedRoles && !allowedRoles.includes(user.role)) {
+    return <AccessDenied allowedRoles={allowedRoles} />;
+  }
+  return children;
 };
 
 function App() {
   return (
-    <BrowserRouter><AuthProvider>
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/" element={<Protected><MainLayout /></Protected>}>
-          <Route index element={<Dashboard />} />
-          <Route path="service-request" element={<ServiceRequest />} />
-          <Route path="tracking" element={<AppTracking />} />
-          <Route path="systems" element={<Systems />} />
-          <Route path="workflow" element={<Workflow />} />
-          <Route path="consent" element={<ConsentPolicy />} />
-          <Route path="audit" element={<AuditActivity />} />
-          <Route path="health" element={<Health />} />
-          <Route path="intelligence" element={<Intelligence />} />
-        </Route>
-      </Routes>
-    </AuthProvider></BrowserRouter>
+    <BrowserRouter>
+      <AuthProvider>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/" element={<Protected><MainLayout /></Protected>}>
+            <Route index element={<Dashboard />} />
+            <Route path="service-request" element={<Protected allowedRoles={['citizen', 'admin']}><ServiceRequest /></Protected>} />
+            <Route path="tracking" element={<AppTracking />} />
+            <Route path="systems" element={<Protected allowedRoles={['admin', 'data_steward']}><Systems /></Protected>} />
+            <Route path="workflow" element={<Protected allowedRoles={['admin']}><Workflow /></Protected>} />
+            <Route path="consent" element={<Protected allowedRoles={['citizen', 'admin']}><ConsentPolicy /></Protected>} />
+            <Route path="audit" element={<Protected allowedRoles={['admin', 'data_steward']}><AuditActivity /></Protected>} />
+            <Route path="health" element={<Protected allowedRoles={['admin']}><Health /></Protected>} />
+            <Route path="intelligence" element={<Protected allowedRoles={['admin', 'data_steward']}><Intelligence /></Protected>} />
+          </Route>
+        </Routes>
+      </AuthProvider>
+    </BrowserRouter>
   );
 }
 

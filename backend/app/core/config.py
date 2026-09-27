@@ -10,10 +10,8 @@ class Settings(BaseSettings):
     app_name: str = "govmesh-backend"
     environment: str = "development"
 
-    # Explicitly use psycopg2 because the backend installs psycopg2-binary.
-    database_url: str = (
-        "postgresql+psycopg2://govmesh:govmesh@localhost:5432/govmesh"
-    )
+    # Default to local zero-latency SQLite; easily overridden by DATABASE_URL in .env or environment
+    database_url: str = "sqlite:///./govmesh.db"
 
     database_url_unpooled: str | None = None
 

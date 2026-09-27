@@ -12,48 +12,45 @@ import {
 
 export const NAVIGATION_CONFIG = [
   {
-    title: 'CORE SERVICES',
+    title: 'CITIZEN SERVICES',
     items: [
       {
         path: '/',
         label: 'Dashboard',
         pageTitle: 'Dashboard Overview',
         description: 'Unified command center & real-time federation overview',
-        icon: LayoutDashboard
+        icon: LayoutDashboard,
+        roles: ['admin', 'data_steward', 'citizen']
       },
       {
         path: '/service-request',
         label: 'Service Request',
         pageTitle: 'Service Request',
         description: 'Cross-departmental citizen service execution',
-        icon: FileText
+        icon: FileText,
+        roles: ['citizen', 'admin']
       },
       {
         path: '/tracking',
         label: 'Application Tracking',
         pageTitle: 'Application Tracking',
         description: 'End-to-end execution status & transaction traces',
-        icon: Activity
+        icon: Activity,
+        roles: ['citizen', 'admin', 'data_steward']
+      },
+      {
+        path: '/consent',
+        label: 'Consent Ledger',
+        pageTitle: 'Consent Management (DPDP)',
+        description: 'Digital Personal Data Protection statutory gate',
+        icon: ShieldCheck,
+        roles: ['citizen', 'admin']
       }
     ]
   },
   {
-    title: 'DATA MESH & INTEROPERABILITY',
+    title: 'DATA MESH & GOVERNANCE',
     items: [
-      {
-        path: '/systems',
-        label: 'Connected Systems',
-        pageTitle: 'Connected Systems',
-        description: 'Departmental registries & legacy protocol adapters',
-        icon: Server
-      },
-      {
-        path: '/workflow',
-        label: 'Workflow Orchestrator',
-        pageTitle: 'Workflow Orchestration',
-        description: 'Distributed choreography, aggregation & rollback engine',
-        icon: GitMerge
-      },
       {
         path: '/intelligence',
         label: 'Schema Intelligence',
@@ -61,18 +58,14 @@ export const NAVIGATION_CONFIG = [
         description: 'Autonomous schema evolution, field mapping & governance',
         icon: BrainCircuit,
         roles: ['admin', 'data_steward']
-      }
-    ]
-  },
-  {
-    title: 'GOVERNANCE & SECURITY',
-    items: [
+      },
       {
-        path: '/consent',
-        label: 'Consent Management',
-        pageTitle: 'Consent Management (DPDP)',
-        description: 'Digital Personal Data Protection statutory gate',
-        icon: ShieldCheck
+        path: '/systems',
+        label: 'Connected Systems',
+        pageTitle: 'Connected Systems',
+        description: 'Departmental registries & legacy protocol adapters',
+        icon: Server,
+        roles: ['admin', 'data_steward']
       },
       {
         path: '/audit',
@@ -80,14 +73,28 @@ export const NAVIGATION_CONFIG = [
         pageTitle: 'Audit Ledger',
         description: 'Cryptographically sealed immutable compliance trail',
         icon: History,
-        roles: ['admin', 'data_steward', 'civic_employee']
+        roles: ['admin', 'data_steward']
+      }
+    ]
+  },
+  {
+    title: 'OPERATIONS & TELEMETRY',
+    items: [
+      {
+        path: '/workflow',
+        label: 'Workflow Orchestrator',
+        pageTitle: 'Workflow Orchestration',
+        description: 'Distributed choreography, aggregation & rollback engine',
+        icon: GitMerge,
+        roles: ['admin']
       },
       {
         path: '/health',
         label: 'System Health',
         pageTitle: 'System Health & Telemetry',
         description: 'Node status, latency metrics & circuit breaker telemetry',
-        icon: HeartPulse
+        icon: HeartPulse,
+        roles: ['admin']
       }
     ]
   }
