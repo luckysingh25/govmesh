@@ -15,26 +15,33 @@ logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
 
 
 connect_args = {}
+db_url = settings.database_url
 
-if settings.database_url.startswith("sqlite"):
+if db_url.startswith("sqlite"):
     connect_args["check_same_thread"] = False
-
-elif (
-    settings.database_url.startswith("postgresql")
-    or settings.database_url.startswith("postgres")
-):
-    connect_args["connect_timeout"] = 5
-
-
-# Standard SQLAlchemy configuration:
-# DNS and routing are owned by the platform.
-engine = create_engine(
-    settings.database_url,
-    pool_pre_ping=True,
-    echo=False,
-    connect_args=connect_args,
-)
-
+    engine = create_engine(
+        db_url,
+        echo=False,
+        connect_args=connect_args,
+    )
+else:
+    if db_url.startswith("postgresql://"):
+        db_url = db_url.replace("postgresql://", "postgresql+psycopg2://", 1)
+    elif db_url.startswith("postgres://"):
+        db_url = db_url.replace("postgres://", "postgresql+psycopg2://", 1)
+    connect_args["connect_timeout"] = 10
+    
+    # High-performance persistent connection pooling for Cloud PostgreSQL (Neon)
+    engine = create_engine(
+        db_url,
+        pool_size=10,
+        max_overflow=20,
+        pool_timeout=15,
+        pool_recycle=1800,
+        pool_pre_ping=False,  # Skip extra network ping roundtrips on every request
+        echo=False,
+        connect_args=connect_args,
+    )
 
 SessionLocal = sessionmaker(
     autocommit=False,
