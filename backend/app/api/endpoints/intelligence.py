@@ -128,7 +128,7 @@ def trigger_demo_scenario(db: Session = Depends(get_db), _current_user: User = D
 
 async def _property_control(path: str) -> dict:
     _require_demo_controls()
-    key: str = str(settings.demo_control_key or "")
+    key: str = settings.demo_control_key or ""
     async with httpx.AsyncClient(timeout=3.0) as client:
         response = await client.put(
             f"{settings.property_url.rstrip('/')}{path}",
@@ -154,7 +154,7 @@ async def set_property_availability(available: bool, _current_user: User = Depen
 @router.post("/demo/reset")
 async def reset_demo(db: Session = Depends(get_db), _current_user: User = Depends(require_roles(["admin", "data_steward"]))):
     _require_demo_controls()
-    key: str = str(settings.demo_control_key or "")
+    key: str = settings.demo_control_key or ""
     async with httpx.AsyncClient(timeout=3.0) as client:
         response = await client.post(
             f"{settings.property_url.rstrip('/')}/demo/reset",

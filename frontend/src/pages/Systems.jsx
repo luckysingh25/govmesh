@@ -1,6 +1,7 @@
 import React from 'react';
 import { Card } from '../components/ui/Card';
 import { Server, Database, Globe, Lock } from 'lucide-react';
+import { fetchSystemsMonitoring } from '../services/api';
 
 const SystemCard = ({ name, type, icon: Icon, status, uptime, latency, protocol }) => (
   <Card className="hover:border-accent/50 transition-colors">
@@ -44,18 +45,16 @@ export const Systems = () => {
   const [error, setError] = React.useState(null);
 
   React.useEffect(() => {
-    import('../services/api').then(({ fetchSystemsMonitoring }) => {
-      fetchSystemsMonitoring()
-        .then(data => {
-          setSystems(data);
-          setLoading(false);
-        })
-        .catch(err => {
-          console.error(err);
-          setError(err.message);
-          setLoading(false);
-        });
-    });
+    fetchSystemsMonitoring()
+      .then(data => {
+        setSystems(data);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error(err);
+        setError(err.message);
+        setLoading(false);
+      });
   }, []);
 
   if (loading) {

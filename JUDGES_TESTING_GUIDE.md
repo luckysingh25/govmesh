@@ -19,14 +19,22 @@ GovMesh is the **governed interoperability middleware beneath state portals like
 
 ## ⚡ 60-Second Quick Start
 
-### 1. Launch All Services
+### Option A: Test on Live Cloud (Zero Setup)
+GovMesh is deployed live for instant evaluation:
+* **Live Web Portal:** **[https://govmesh-frontend.onrender.com](https://govmesh-frontend.onrender.com)**
+* **Interactive OpenAPI / Swagger Docs:** **[https://govmesh-backend.onrender.com/docs](https://govmesh-backend.onrender.com/docs)**
+* **Health & Federation Monitor:** **[https://govmesh-backend.onrender.com/health](https://govmesh-backend.onrender.com/health)**
+
+---
+
+### Option B: Local Evaluation
 From the repository root on Windows:
 ```powershell
 .\start_all.ps1
 ```
 *(Or on Linux/macOS, follow the terminal commands in [`docs/SETUP.md`](docs/SETUP.md))*
 
-This launches 6 isolated services:
+This launches all 6 isolated services locally:
 * **Frontend Portal (React 18 + Vite):** [http://localhost:3000](http://localhost:3000)
 * **GovMesh Core Gateway (FastAPI / Python 3.11):** [http://localhost:8000/docs](http://localhost:8000/docs)
 * **Identity Registry Service (Port 8101):** REST API (Aadhaar/National ID)
@@ -38,7 +46,7 @@ This launches 6 isolated services:
 
 ## 🔐 Verified Login Credentials
 
-The authentication page at [http://localhost:3000/login](http://localhost:3000/login) includes **1-Click Verified Demonstration Personas**:
+Both the Live Portal ([https://govmesh-frontend.onrender.com/login](https://govmesh-frontend.onrender.com/login)) and Local Portal ([http://localhost:3000/login](http://localhost:3000/login)) include **1-Click Verified Demonstration Personas**:
 
 | Persona | Role | Email | Password | Access & Responsibilities |
 | :--- | :--- | :--- | :--- | :--- |

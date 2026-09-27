@@ -37,13 +37,16 @@ def seed_demo_users(db: Session) -> None:
             needs_commit = True
             logger.info("seeded_demo_user email=%s role=%s", email, role)
         else:
-            # Ensure correct role and password in development
+            # Ensure correct role and password in demonstration / development
             updated = False
             if user.role != role:
                 user.role = role
                 updated = True
             if citizen_id and user.citizen_id != citizen_id:
                 user.citizen_id = citizen_id
+                updated = True
+            if user.hashed_password != hashed_pwd:
+                user.hashed_password = hashed_pwd
                 updated = True
             if updated:
                 needs_commit = True
