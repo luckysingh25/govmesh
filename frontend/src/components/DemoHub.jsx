@@ -39,7 +39,8 @@ export const DemoHub = () => {
         if (!existing) {
           await grantConsent('CIT-1001', 'business_registration', ['identity', 'municipality', 'property', 'tax'], 24).catch(() => {});
         }
-        navigate('/service-request?citizen=CIT-1001&service=business_registration&scenario=healthy_consistent&autoSubmit=true&evaluatorNote=Golden+Path%3A+All+4+departments+succeed+concurrently+via+asyncio.gather');
+        const now = Date.now();
+        navigate(`/service-request?citizen=CIT-1001&service=business_registration&scenario=healthy_consistent&autoSubmit=true&t=${now}&evaluatorNote=Golden+Path%3A+All+4+departments+succeed+concurrently+via+asyncio.gather`);
       } 
       else if (scenarioKey === 'denial') {
         setActiveMessage({
@@ -52,7 +53,8 @@ export const DemoHub = () => {
         if (existing?.id) {
           await revokeConsent(existing.id).catch(() => {});
         }
-        navigate('/service-request?citizen=CIT-1001&service=business_registration&scenario=healthy_consistent&autoSubmit=true&evaluatorNote=DPDP+Act+2023+Enforcement%3A+Policy+gate+immediately+denies+request+with+zero+external+network+calls');
+        const now = Date.now();
+        navigate(`/service-request?citizen=CIT-1001&service=business_registration&scenario=healthy_consistent&autoSubmit=true&t=${now}&evaluatorNote=DPDP+Act+2023+Enforcement%3A+Policy+gate+immediately+denies+request+with+zero+external+network+calls`);
       } 
       else if (scenarioKey === 'degradation') {
         setActiveMessage({
@@ -64,7 +66,8 @@ export const DemoHub = () => {
         if (!existing) {
           await grantConsent('CIT-1003', 'property_transfer', ['identity', 'municipality', 'property', 'tax'], 24).catch(() => {});
         }
-        navigate('/service-request?citizen=CIT-1003&service=property_transfer&scenario=property_missing&autoSubmit=true&evaluatorNote=Graceful+Degradation%3A+Property+registry+absent.+Clean+partial+response+with+ZERO+fake+data+fabrication');
+        const now = Date.now();
+        navigate(`/service-request?citizen=CIT-1003&service=property_transfer&scenario=property_missing&autoSubmit=true&t=${now}&evaluatorNote=Graceful+Degradation%3A+Property+registry+absent.+Clean+partial+response+with+ZERO+fake+data+fabrication`);
       } 
       else if (scenarioKey === 'conflict') {
         setActiveMessage({
@@ -76,7 +79,8 @@ export const DemoHub = () => {
         if (!existing) {
           await grantConsent('CIT-1006', 'business_registration', ['identity', 'municipality', 'property', 'tax'], 24).catch(() => {});
         }
-        navigate('/service-request?citizen=CIT-1006&service=business_registration&scenario=owner_name_mismatch&autoSubmit=true&evaluatorNote=Explainable+Advisory%3A+Deterministic+cross-system+rule+flags+name+discrepancy+(Kabir+A.+Jain+vs+Kabir+Jain)');
+        const now = Date.now();
+        navigate(`/service-request?citizen=CIT-1006&service=business_registration&scenario=owner_name_mismatch&autoSubmit=true&t=${now}&evaluatorNote=Explainable+Advisory%3A+Deterministic+cross-system+rule+flags+name+discrepancy+(Kabir+A.+Jain+vs+Kabir+Jain)`);
       } 
       else if (scenarioKey === 'schema') {
         setActiveMessage({

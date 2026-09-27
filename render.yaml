@@ -13,7 +13,7 @@ services:
       - key: SECRET_KEY
         generateValue: true
       - key: ENVIRONMENT
-        value: production
+        value: demo
       - key: CORS_ORIGINS
         value: "*"
       - key: DEMO_CONTROLS_ENABLED
