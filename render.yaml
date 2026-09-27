@@ -2,7 +2,7 @@ services:
   # GovMesh Backend API Gateway & Federated Microservices
   - type: web
     name: govmesh-backend
-    env: python
+    runtime: python
     region: ohio
     plan: free
     buildCommand: pip install -r backend/requirements.txt
@@ -21,11 +21,10 @@ services:
       - key: DEMO_CONTROL_KEY
         value: "govmesh-demo-control-2026"
 
-  # GovMesh Frontend Web Application
-  - type: static
+  # GovMesh Frontend Web Application (Static Site)
+  - type: web
     name: govmesh-frontend
-    env: node
-    plan: free
+    runtime: static
     buildCommand: cd frontend && npm install && npm run build
     staticPublishPath: ./frontend/dist
     envVars:
@@ -35,3 +34,4 @@ services:
       - type: rewrite
         source: /*
         destination: /index.html
+
