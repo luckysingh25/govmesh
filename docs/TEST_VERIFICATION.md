@@ -7,30 +7,31 @@ This document records the automated verification and test evidence for the GovMe
 ## 1. Test Suite Summary
 
 * **Backend Test Framework:** `pytest` (with `pytest-asyncio`, SQLite in-memory test database, and mock HTTP clients)
-* **Backend Test Count:** **88 passing test cases**
+* **Backend Test Count:** **100 passing test cases**
 * **Frontend Test Framework:** `vitest` with `@testing-library/react`
-* **Frontend Test Count:** **5 passing test suites**
+* **Frontend Test Count:** **7 passing test cases**
 * **Production Build Check:** Vite bundler passes with 0 syntax or bundling errors.
 
 ```
 ============================= test session starts =============================
 platform win32 -- Python 3.11.x, pytest-8.x.x
 rootdir: d:\govmesh\backend
-collected 88 items
+collected 100 items
 
 tests/test_health.py .                                                   [  1%]
-tests/test_auth_rbac.py ........                                         [ 10%]
-tests/test_consent_policy.py ............                                [ 23%]
-tests/test_connectors.py ...............                                 [ 41%]
-tests/test_service_types.py ........                                     [ 50%]
-tests/test_seeded_scenarios.py ........                                  [ 59%]
-tests/test_intelligence_engine.py ............                           [ 72%]
-tests/test_intelligence_endpoints.py ........                            [ 81%]
-tests/test_audit_lineage.py ......                                       [ 88%]
-tests/test_systems_audit.py .....                                        [ 94%]
-tests/test_security_hardening.py .....                                   [100%]
+tests/test_auth_rbac.py ........                                         [  9%]
+tests/test_consent_policy.py ............                                [ 21%]
+tests/test_connectors.py ...............                                 [ 36%]
+tests/test_service_types.py ........                                     [ 44%]
+tests/test_seeded_scenarios.py ........                                  [ 52%]
+tests/test_intelligence_engine.py ............                           [ 64%]
+tests/test_intelligence_endpoints.py ........                            [ 72%]
+tests/test_audit_lineage.py ......                                       [ 78%]
+tests/test_systems_audit.py .....                                        [ 83%]
+tests/test_security_hardening.py .....                                   [ 88%]
+tests/test_real_department_integration.py ............                   [100%]
 
-============================== 88 passed in 13.96s =============================
+============================= 100 passed in 9.44s ==============================
 ```
 
 ---

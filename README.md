@@ -3,19 +3,34 @@
 [![SIH 2026](https://img.shields.io/badge/SIH%202026-PS%20SIH26129-blue.svg?style=for-the-badge&logo=gov.in)](https://sih.gov.in)
 [![Organization](https://img.shields.io/badge/Sponsoring%20Org-Govt%20of%20Maharashtra-orange.svg?style=for-the-badge)](https://www.maharashtra.gov.in/)
 [![Theme](https://img.shields.io/badge/Theme-Smart%20Automation-purple.svg?style=for-the-badge)](https://sih.gov.in)
-[![Backend](https://img.shields.io/badge/Backend-FastAPI%20%7C%20Python%203.11-009688.svg?style=for-the-badge&logo=fastapi)](https://fastapi.tiangolo.com/)
-[![Frontend](https://img.shields.io/badge/Frontend-React%2018%20%7C%20Vite-61DAFB.svg?style=for-the-badge&logo=react)](https://react.dev/)
-[![Tests](https://img.shields.io/badge/Automated%20Tests-88%20Passed%20(Pytest)-brightgreen.svg?style=for-the-badge&logo=pytest)](docs/TEST_VERIFICATION.md)
+[![Live Portal](https://img.shields.io/badge/Live%20Portal-Render%20Cloud-00bcd4.svg?style=for-the-badge&logo=render)](https://govmesh-frontend.onrender.com)
+[![Live API](https://img.shields.io/badge/Live%20API-Swagger%20Docs-4caf50.svg?style=for-the-badge&logo=fastapi)](https://govmesh-backend.onrender.com/docs)
+[![Database](https://img.shields.io/badge/Database-Neon%20Serverless%20Postgres-00e699.svg?style=for-the-badge&logo=postgresql)](https://neon.tech)
+[![Tests](https://img.shields.io/badge/Automated%20Tests-100%20Passed%20(Pytest)-brightgreen.svg?style=for-the-badge&logo=pytest)](docs/TEST_VERIFICATION.md)
 [![Compliance](https://img.shields.io/badge/Compliance-IndEA%202.0%20%7C%20DPDP%202023-blueviolet.svg?style=for-the-badge)](docs/COMPLIANCE_STANDARDS.md)
 
 > **Smart India Hackathon (SIH) 2026 — Problem Statement SIH26129**  
 > **Problem Title:** *System integration and interoperability among government digital platforms, resulting in fragmented service delivery*  
 > **Sponsoring Body:** Government of Maharashtra (Department of IT / e-Governance)  
 > **Team Name:** The Code Blooded  
-> **Jury & Evaluator Quick Test Guide:** 🏆 **[`JUDGES_TESTING_GUIDE.md`](JUDGES_TESTING_GUIDE.md)**  
-> **Demo Walkthrough Video:** [Watch Unlisted 2.5-Minute Demo Video](https://youtube.com) *(Insert Video Link)*
+> 🌐 **Live Cloud Portal:** **[https://govmesh-frontend.onrender.com](https://govmesh-frontend.onrender.com)**  
+> ⚡ **Live Interactive API & Swagger:** **[https://govmesh-backend.onrender.com/docs](https://govmesh-backend.onrender.com/docs)**  
+> 🏆 **Jury & Evaluator Quick Test Guide:** **[`JUDGES_TESTING_GUIDE.md`](JUDGES_TESTING_GUIDE.md)**  
+> 🎬 **Demo Walkthrough Video:** [Watch Unlisted 2.5-Minute Demo Video](https://youtube.com) *(Insert Video Link)*
 
 ---
+
+## 🌐 Live Cloud Deployment
+
+GovMesh is fully provisioned, containerized, and deployed live with zero cold-start simulation:
+
+| Component | Technology | Live URL | Status |
+| :--- | :--- | :--- | :--- |
+| **Citizen & Admin Single-Window** | React 18 + Vite (SPA) | [https://govmesh-frontend.onrender.com](https://govmesh-frontend.onrender.com) | 🟢 Active / Live |
+| **GovMesh Core Gateway & Microservices** | FastAPI / Python 3.11 | [https://govmesh-backend.onrender.com/docs](https://govmesh-backend.onrender.com/docs) | 🟢 Active / Live |
+| **System Health & Observability** | REST Endpoint | [https://govmesh-backend.onrender.com/health](https://govmesh-backend.onrender.com/health) | 🟢 Active / Live |
+| **Serverless Federated Database** | Neon PostgreSQL (15 Tables) | Cloud Pooled (Ohio AWS) | 🟢 Connected (100% Synchronized) |
+
 
 ## 🏛️ Executive Overview
 
